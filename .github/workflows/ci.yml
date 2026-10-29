@@ -1,0 +1,21 @@
+name: CI
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      # Tests that need a broker or a database skip themselves when the service is not there (JUnit assumptions); the protocol,
+      # fuzz and security tests run in full. Docker services for the rest: hydrangea-*/src/test/resources/*/start-*.sh.
+      - run: mvn -B -ntp test

@@ -1,5 +1,7 @@
 # Hydrangea
 
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.goku-kakarot97/hydrangea-core?label=Maven%20Central)](https://central.sonatype.com/namespace/io.github.goku-kakarot97) [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE) ![Java](https://img.shields.io/badge/Java-21-orange)
+
 A small non-blocking networking framework for Java 21 with **no third-party dependencies**: an event loop on `java.nio`, and on top of it servers for HTTP/1.1, HTTP/2, HTTP/3 (experimental), WebSocket, SSE and gRPC, and clients for HTTP, gRPC, Redis, Kafka, MQTT, AMQP, PostgreSQL and MySQL. Every protocol is its own Maven module; the whole thing is about the size of one mid-sized library.
 
 Vietnamese documentation, with the full detail of every feature and every measurement: [`README-VI.md`](README-VI.md).
@@ -140,6 +142,7 @@ Recording latency costs 39 ns per call when a sink is bound and 7 ns when none i
 - **Fuzzing** in `mvn test`: frame and header decoders, HPACK, the protocol state machines through real sockets, the TLS stage, and the database clients against a server that sends rubbish (both found parser exceptions escaping as "internal error"; fixed).
 - **Security tests** ([`SECURITY-TESTING.md`](SECURITY-TESTING.md)): HTTP request smuggling (CL+TE, conflicting CL, bare LF, obs-fold), header injection, WebSocket framing, and for the database clients a hostile server / man in the middle that asks for a local file (`LOAD DATA LOCAL`), switches to a clear-text password plugin, refuses TLS after it was requested, smuggles bytes before the TLS handshake, or fakes the SCRAM server signature. Two findings, fixed: PostgreSQL sent the password in clear text when the server asked without TLS, and MySQL sent it encrypted with a public key the server handed over (both now refuse by default).
 - **Graceful shutdown** verified on Kubernetes with a real SIGTERM during a rolling restart.
+- **On GitHub**: CI runs `mvn test` on every push (the tests that need a broker or a database skip themselves without one), CodeQL with the security-extended queries, and the OpenSSF Scorecard. Vulnerabilities: see [`SECURITY.md`](SECURITY.md).
 
 ## Metrics
 
