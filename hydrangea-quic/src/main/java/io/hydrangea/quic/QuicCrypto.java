@@ -83,7 +83,10 @@ final class QuicCrypto {
             this.iv = hkdfExpandLabel(secret, "quic iv", new byte[0], 12);
             this.hp = new SecretKeySpec(hkdfExpandLabel(secret, "quic hp", new byte[0], 16), "AES");
             try {
-                this.hpCipher = Cipher.getInstance("AES/ECB/NoPadding");
+                // Header protection (RFC 9001, 5.4.3): AES applied to ONE 16-byte sample of the packet, the first 5 bytes of the output being the mask for the
+                // packet number and flags. This is AES as a raw block cipher on a single block with a key of its own, which the JCA spells "AES/ECB/NoPadding";
+                // no data is encrypted in ECB mode (the payload goes through AES-GCM below). Every QUIC implementation does the same.
+                this.hpCipher = Cipher.getInstance("AES/ECB/NoPadding"); // codeql[java/weak-cryptographic-algorithm] single-block AES for QUIC header protection, as the RFC requires
                 this.hpCipher.init(Cipher.ENCRYPT_MODE, hp);
             } catch (GeneralSecurityException e) {
                 throw new IllegalStateException(e);

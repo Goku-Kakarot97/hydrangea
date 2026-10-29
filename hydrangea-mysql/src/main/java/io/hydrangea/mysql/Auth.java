@@ -20,7 +20,7 @@ final class Auth {
 
     private static byte[] digest(String alg, byte[]... parts) {
         try {
-            MessageDigest md = MessageDigest.getInstance(alg);
+            MessageDigest md = MessageDigest.getInstance(alg); // codeql[java/potentially-weak-cryptographic-algorithm] mysql_native_password is defined as SHA-1 by the MySQL protocol; caching_sha2_password uses SHA-256
             for (byte[] p : parts) {
                 md.update(p);
             }
@@ -69,7 +69,7 @@ final class Auth {
             for (int i = 0; i < plain.length; i++) {
                 plain[i] ^= scramble[i % scramble.length];
             }
-            Cipher c = Cipher.getInstance("RSA/ECB/OAEPWithSHA-1AndMGF1Padding");
+            Cipher c = Cipher.getInstance("RSA/ECB/OAEPWithSHA-1AndMGF1Padding"); // codeql[java/weak-cryptographic-algorithm, java/potentially-weak-cryptographic-algorithm] the MySQL server accepts only RSA-OAEP with SHA-1 for this exchange (and the client only does it with the caller's opt-in, see MyConfig.withAllowPublicKeyRetrieval)
             c.init(Cipher.ENCRYPT_MODE, key);
             return c.doFinal(plain);
         } catch (GeneralSecurityException | IllegalArgumentException e) {

@@ -16,7 +16,8 @@ public final class Script {
         }
         this.source = source;
         try {
-            this.sha = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-1").digest(source.getBytes(StandardCharsets.UTF_8)));
+            // Redis identifies a cached script by its SHA-1 (EVALSHA, SCRIPT LOAD): the hash is the protocol's name for the script, not a security measure
+            this.sha = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-1").digest(source.getBytes(StandardCharsets.UTF_8))); // codeql[java/potentially-weak-cryptographic-algorithm] required by the Redis protocol
         } catch (java.security.NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
         }

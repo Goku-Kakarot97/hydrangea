@@ -97,7 +97,7 @@ public final class WebSocketUpgrade {
     /** base64(SHA-1(key + GUID)) */
     static String acceptKey(String key) {
         try {
-            byte[] sha1 = MessageDigest.getInstance("SHA-1").digest((key + GUID).getBytes(StandardCharsets.ISO_8859_1));
+            byte[] sha1 = MessageDigest.getInstance("SHA-1").digest((key + GUID).getBytes(StandardCharsets.ISO_8859_1)); // codeql[java/potentially-weak-cryptographic-algorithm] Sec-WebSocket-Accept is defined as SHA-1 by RFC 6455; it proves the handshake was understood, it protects nothing
             return Base64.getEncoder().encodeToString(sha1);
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);

@@ -1,6 +1,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0">
   <modelVersion>4.0.0</modelVersion>
   <groupId>x</groupId><artifactId>gj</artifactId><version>1</version>
+  <!-- grpc-java pulls Guava in; versions before 33.7.2 have GHSA-xxph-c9ww-hj94 (deserialization). This harness never deserializes Guava collections, but
+       the fixed version costs nothing. -->
+  <dependencyManagement>
+    <dependencies>
+      <dependency><groupId>com.google.guava</groupId><artifactId>guava</artifactId><version>33.7.2-jre</version></dependency>
+    </dependencies>
+  </dependencyManagement>
   <dependencies>
     <dependency><groupId>io.grpc</groupId><artifactId>grpc-netty-shaded</artifactId><version>1.81.0</version></dependency>
     <dependency><groupId>io.grpc</groupId><artifactId>grpc-stub</artifactId><version>1.81.0</version></dependency>

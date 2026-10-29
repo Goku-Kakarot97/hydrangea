@@ -1702,7 +1702,7 @@ public final class PgClient implements AutoCloseable {
                 case 5 -> {
                     byte[] salt = new byte[4];
                     m.get(salt);
-                    MessageDigest md5 = MessageDigest.getInstance("MD5");
+                    MessageDigest md5 = MessageDigest.getInstance("MD5"); // codeql[java/weak-cryptographic-algorithm, java/potentially-weak-cryptographic-algorithm] AuthenticationMD5Password is defined as MD5 by the PostgreSQL protocol; SCRAM-SHA-256 is used whenever the server offers it
                     md5.update(requirePassword().getBytes(StandardCharsets.UTF_8));
                     md5.update(config.user().getBytes(StandardCharsets.UTF_8));
                     String inner = hex(md5.digest());
