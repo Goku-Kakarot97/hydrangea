@@ -1,0 +1,1 @@
+RESULT scenario=connections lib=hydrangea connections=100 confirmed_per_s=65490.0 delivered_per_s=65482.3 client_cpu_s_per_100k=1.2 setup_s=0.8 setup_cpu_s=0.3 threads_after_setup=8 threads_peak=12 rss_mb=205

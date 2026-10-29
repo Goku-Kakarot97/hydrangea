@@ -1,14 +1,25 @@
+# build output
+target/
+out/
+benchmark/out*/
+*.class
+*.jfr
+
+# IDE
+.idea/
+*.iml
+*.ipr
 .project
 .classpath
-.settings
-*.iml
-target
-.idea
-*.ipr
+.settings/
 *~
-out
-node_modules
+
+# benchmark raw data that is too big for git (the summaries and the *.md result files are kept)
+benchmark/*.log
+benchmark/mqtt-results/
+benchmark/*.txt
+
+# node
+node_modules/
 package-lock.json
-autobahn
-k8s
-benchmark
+autobahn/

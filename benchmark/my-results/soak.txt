@@ -1,0 +1,13 @@
+t= 20s heap=   4 MB threads= 24 sessions=16 ops=10288 unexpected=0
+t= 40s heap=   4 MB threads= 24 sessions=15 ops=20290 unexpected=0
+t= 60s heap=   4 MB threads= 24 sessions=15 ops=32201 unexpected=0
+t= 80s heap=   4 MB threads= 24 sessions=15 ops=41449 unexpected=0
+t=100s heap=   4 MB threads= 24 sessions=15 ops=47645 unexpected=0
+t=120s heap=   4 MB threads= 24 sessions=16 ops=55499 unexpected=0
+t=140s heap=   4 MB threads= 24 sessions=16 ops=63176 unexpected=0
+t=160s heap=   4 MB threads= 24 sessions=15 ops=68899 unexpected=0
+t=180s heap=   4 MB threads= 24 sessions=15 ops=74381 unexpected=0
+operations: {batch=7439, big=3599, insert=11380, query=30046, stream=7262, timeout=7437, tx=7250}
+stray kills that hit the next call: 379
+unexpected: none
+RESULT seconds=180 workers=32 conns=8 cache=64 distinct=300 ops=74413 ops_per_s=413 heap_first_third_mb=4 heap_last_third_mb=4 max_prepared_on_a_connection=64 stray_kills=379 unexpected=0

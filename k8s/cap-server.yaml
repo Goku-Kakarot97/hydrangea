@@ -1,0 +1,39 @@
+# gRPC + HTTP/2 soak target (benchmark/src/h2/SoakServer.java). Needs the ConfigMap hydrangea-cap-jars (see k8s/README.md).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hydrangea-cap-server
+  labels: {app.kubernetes.io/part-of: hydrangea-bench, app: hydrangea-cap-server}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: hydrangea-cap-server}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/part-of: hydrangea-bench, app: hydrangea-cap-server}
+    spec:
+      terminationGracePeriodSeconds: 40
+      containers:
+        - name: server
+          image: eclipse-temurin:21-jre
+          command: ["java", "-Xms192m", "-Xmx256m", "-XX:+UseG1GC", "-Dhealth.interval.sec=30", "-cp", "/jars/hydrangea.jar:/jars/bench.jar",
+                    "h2.SoakServer", "8080", "1", "0.0.0.0"]
+          ports: [{containerPort: 8080}]
+          resources:
+            requests: {cpu: "500m", memory: 384Mi}
+            limits: {cpu: "500m", memory: 448Mi}
+          readinessProbe: {tcpSocket: {port: 8080}, initialDelaySeconds: 3, periodSeconds: 5}
+          volumeMounts: [{name: jars, mountPath: /jars}]
+      volumes:
+        - name: jars
+          configMap: {name: hydrangea-cap-jars}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hydrangea-cap-server
+  labels: {app.kubernetes.io/part-of: hydrangea-bench}
+spec:
+  type: ClusterIP
+  selector: {app: hydrangea-cap-server}
+  ports: [{port: 8080, targetPort: 8080}]

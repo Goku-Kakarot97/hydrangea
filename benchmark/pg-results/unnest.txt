@@ -1,0 +1,15 @@
+RESULT way=hydrangea-unnest rows=200000 chunk=1000 seconds=0.624 rows_per_s=320441 cpu_seconds=0.174 cpu_us_per_row=0.9
+RESULT way=pgjdbc-unnest rows=200000 chunk=1000 seconds=0.390 rows_per_s=512796 cpu_seconds=0.068 cpu_us_per_row=0.3
+RESULT way=pgjdbc-unnest rows=200000 chunk=1000 seconds=0.397 rows_per_s=504240 cpu_seconds=0.076 cpu_us_per_row=0.4
+RESULT way=hydrangea-unnest rows=200000 chunk=1000 seconds=0.432 rows_per_s=463049 cpu_seconds=0.155 cpu_us_per_row=0.8
+RESULT way=hydrangea-unnest rows=200000 chunk=1000 seconds=0.454 rows_per_s=440096 cpu_seconds=0.150 cpu_us_per_row=0.7
+RESULT way=pgjdbc-unnest rows=200000 chunk=1000 seconds=0.433 rows_per_s=461553 cpu_seconds=0.095 cpu_us_per_row=0.5
+RESULT way=hydrangea-unnest rows=200000 chunk=1000 seconds=0.516 rows_per_s=387711 cpu_seconds=0.123 cpu_us_per_row=0.6
+RESULT way=pgjdbc-unnest rows=200000 chunk=1000 seconds=0.418 rows_per_s=478421 cpu_seconds=0.069 cpu_us_per_row=0.3
+RESULT way=hydrangea-batch rows=200000 chunk=1000 seconds=0.966 rows_per_s=206979 cpu_seconds=0.192 cpu_us_per_row=1.0
+RESULT way=hydrangea-unnest rows=200000 chunk=1000 seconds=0.476 rows_per_s=420372 cpu_seconds=0.166 cpu_us_per_row=0.8
+RESULT way=pgjdbc-unnest rows=200000 chunk=1000 seconds=0.346 rows_per_s=578228 cpu_seconds=0.060 cpu_us_per_row=0.3
+RESULT way=hydrangea-batch rows=200000 chunk=1000 seconds=1.052 rows_per_s=190150 cpu_seconds=0.226 cpu_us_per_row=1.1
+RESULT way=hydrangea-unnest rows=200000 chunk=1000 seconds=0.592 rows_per_s=337999 cpu_seconds=0.136 cpu_us_per_row=0.7
+RESULT way=pgjdbc-unnest rows=200000 chunk=1000 seconds=0.322 rows_per_s=621766 cpu_seconds=0.051 cpu_us_per_row=0.3
+RESULT way=hydrangea-batch rows=200000 chunk=1000 seconds=0.911 rows_per_s=219468 cpu_seconds=0.183 cpu_us_per_row=0.9

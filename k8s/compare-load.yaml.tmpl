@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: __NAME__
+  labels: {app.kubernetes.io/part-of: hydrangea-bench}
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels: {app.kubernetes.io/part-of: hydrangea-bench, app: bench-load}
+    spec:
+      restartPolicy: Never
+      # nodeSelector: {kubernetes.io/hostname: <node>}   # pin the compared servers to one node for a fair comparison
+      containers:
+        - name: load
+          image: eclipse-temurin:21-jre
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              H=__TARGET__.iris.svc.cluster.local
+              L() { echo "## $*"; java -Xmx384m -cp /jars/hydrangea.jar:/jars/bench.jar bench.HttpLoad "$@" 2>&1 | grep -E "RESULT|ERROR-KIND"; }
+              L http 8080 64 3 4 0 host=$H path=/plain >/dev/null 2>&1 || true
+              L http 8080 64   3 3 10 host=$H path=/plain
+              L http 8080 1000 3 3 10 host=$H path=/plain
+              L http 8080 64   3 3 10 host=$H path=/json
+              L http 8080 64   3 3 10 host=$H "path=/users/%d?q=hello"
+              L http 8080 64   3 3 10 host=$H method=POST path=/echo body=1024
+              L http 8080 8    3 3 10 host=$H path=/download/1048576 verify=false
+              L ws   8080 64   3 3 10 host=$H size=64
+              L ws   8080 1000 3 3 10 host=$H size=64
+              echo DONE
+          resources:
+            requests: {cpu: 500m, memory: 512Mi}
+            limits: {cpu: "3", memory: 768Mi}
+          volumeMounts: [{name: jars, mountPath: /jars}]
+      volumes:
+        - name: jars
+          configMap: {name: hydrangea-jars}

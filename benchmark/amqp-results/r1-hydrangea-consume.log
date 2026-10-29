@@ -1,0 +1,1 @@
+RESULT scenario=consume lib=hydrangea msgs_per_s=78529.4 client_cpu_s_per_100k=0.4 queued=300000 received=300000 left_in_queue=0 threads_peak=8 rss_mb=219

@@ -21,6 +21,20 @@ try (var group = new EventLoopGroup()) {
 - **Honest numbers.** Every benchmark below was run against the established library for that protocol, on the same machine or the same Kubernetes pod, with fresh JVMs, rotating order and every reply verified. The result files say what was measured, what was not, and where Hydrangea loses.
 - **Nothing to pull in.** The library modules import only the JDK (`ArchitectureTest` enforces it). `hydrangea-micrometer` is the one exception, for exporting metrics.
 
+## Getting it
+
+Maven Central, group `io.github.goku-kakarot97` (the Java packages stay `io.hydrangea.*`), one artifact per module (pick what you use; each pulls in `hydrangea-core`):
+
+```xml
+<dependency>
+    <groupId>io.github.goku-kakarot97</groupId>
+    <artifactId>hydrangea-http</artifactId>      <!-- or hydrangea-grpc, -redis, -kafka, -mqtt, -amqp, -postgres, -mysql, -sql, -micrometer -->
+    <version>1.0.1</version>
+</dependency>
+```
+
+Or straight from a tag through [JitPack](https://jitpack.io/#Goku-Kakarot97/hydrangea) (`com.github.Goku-Kakarot97.hydrangea:hydrangea-http:v1.0.1`).
+
 ## Modules
 
 | Module | What it holds | Depends on |
@@ -154,3 +168,7 @@ Scripts to start the Docker services the integration tests and benchmarks use ar
 ## Reading the code
 
 [`READING-GUIDE.md`](READING-GUIDE.md) is a path from the outside in (NIO, the event loop, a pipeline, one protocol); [`HTTP-CLIENT-READING.md`](HTTP-CLIENT-READING.md) follows one request through the HTTP client; [`NIO-INTRO.md`](NIO-INTRO.md) is the background; [`REVIEW.md`](REVIEW.md) explains the design choices against XNIO.
+
+## License
+
+[Apache License 2.0](LICENSE).

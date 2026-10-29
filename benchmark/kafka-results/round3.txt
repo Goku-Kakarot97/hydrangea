@@ -1,0 +1,24 @@
+RESULT scenario=connect lib=hydrangea samples=30 p50_ms=10.5 p99_ms=12.6 rss_mb=117
+RESULT scenario=produce lib=hydrangea size=100 acks=-1 idem=true inflight=5 partitions=3 per_s=2044911.6 mb_per_s=195.0 p50_ms=21.0 p99_ms=79.7 client_cpu_s_per_100k=0.043 caller_cpu_s_per_100k=0.015 io_cpu_s_per_100k=0.022 threads_peak=10 rss_mb=289
+RESULT scenario=produce lib=hydrangea size=100 acks=-1 idem=true inflight=5 partitions=1 per_s=1526365.1 mb_per_s=145.6 p50_ms=25.2 p99_ms=151.0 client_cpu_s_per_100k=0.046 caller_cpu_s_per_100k=0.017 io_cpu_s_per_100k=0.024 threads_peak=10 rss_mb=246
+RESULT scenario=produce lib=hydrangea size=1024 acks=-1 idem=true inflight=5 partitions=3 per_s=259464.7 mb_per_s=253.4 p50_ms=167.8 p99_ms=402.7 client_cpu_s_per_100k=0.158 caller_cpu_s_per_100k=0.023 io_cpu_s_per_100k=0.105 threads_peak=10 rss_mb=285
+RESULT scenario=produce lib=hydrangea size=100 acks=1 idem=false inflight=5 partitions=3 per_s=2019099.5 mb_per_s=192.6 p50_ms=21.0 p99_ms=71.3 client_cpu_s_per_100k=0.044 caller_cpu_s_per_100k=0.015 io_cpu_s_per_100k=0.024 threads_peak=10 rss_mb=261
+RESULT scenario=produce lib=hydrangea size=100 acks=1 idem=false inflight=1 partitions=3 per_s=951961.8 mb_per_s=90.8 p50_ms=46.1 p99_ms=142.6 client_cpu_s_per_100k=0.067 caller_cpu_s_per_100k=0.021 io_cpu_s_per_100k=0.037 threads_peak=10 rss_mb=248
+RESULT scenario=produce-threads lib=hydrangea threads=1000 acks=-1 per_s=657038.3 p50_ms=1.2 p99_ms=5.0 client_cpu_s_per_100k=0.3 threads_peak=17 rss_mb=226
+RESULT scenario=produce-threads lib=hydrangea threads=1000 acks=1 per_s=669853.8 p50_ms=1.2 p99_ms=5.2 client_cpu_s_per_100k=0.3 threads_peak=17 rss_mb=210
+RESULT scenario=consume lib=hydrangea size=100 records=3000000 per_s=5557640.5 mb_per_s=530.0 client_cpu_s_per_100k=0.023 threads_peak=11 rss_mb=407
+RESULT scenario=consume lib=hydrangea size=1024 records=500000 per_s=730044.2 mb_per_s=712.9 client_cpu_s_per_100k=0.170 threads_peak=11 rss_mb=352
+RESULT scenario=consume-group lib=hydrangea size=100 records=3000000 per_s=6257560.7 mb_per_s=596.8 client_cpu_s_per_100k=0.020 threads_peak=11 rss_mb=394
+RESULT scenario=e2e lib=hydrangea samples=3000 p50_ms=0.3 p99_ms=1.8 p999_ms=4.7 rss_mb=183
+RESULT scenario=connect lib=kafka-clients samples=30 p50_ms=13.6 p99_ms=27.3 rss_mb=158
+RESULT scenario=produce lib=kafka-clients size=100 acks=-1 idem=true inflight=5 partitions=3 per_s=1507282.9 mb_per_s=143.7 p50_ms=27.3 p99_ms=83.9 client_cpu_s_per_100k=0.111 caller_cpu_s_per_100k=0.048 io_cpu_s_per_100k=0.048 threads_peak=7 rss_mb=357
+RESULT scenario=produce lib=kafka-clients size=100 acks=-1 idem=true inflight=5 partitions=1 per_s=1439269.6 mb_per_s=137.3 p50_ms=29.4 p99_ms=109.1 client_cpu_s_per_100k=0.110 caller_cpu_s_per_100k=0.046 io_cpu_s_per_100k=0.048 threads_peak=7 rss_mb=380
+RESULT scenario=produce lib=kafka-clients size=1024 acks=-1 idem=true inflight=5 partitions=3 per_s=190882.9 mb_per_s=186.4 p50_ms=218.1 p99_ms=805.3 client_cpu_s_per_100k=0.336 caller_cpu_s_per_100k=0.073 io_cpu_s_per_100k=0.128 threads_peak=7 rss_mb=235
+RESULT scenario=produce lib=kafka-clients size=100 acks=1 idem=false inflight=5 partitions=3 per_s=880059.5 mb_per_s=83.9 p50_ms=46.1 p99_ms=218.1 client_cpu_s_per_100k=0.123 caller_cpu_s_per_100k=0.045 io_cpu_s_per_100k=0.047 threads_peak=7 rss_mb=356
+RESULT scenario=produce lib=kafka-clients size=100 acks=1 idem=false inflight=1 partitions=3 per_s=835236.0 mb_per_s=79.7 p50_ms=52.4 p99_ms=142.6 client_cpu_s_per_100k=0.117 caller_cpu_s_per_100k=0.050 io_cpu_s_per_100k=0.051 threads_peak=7 rss_mb=301
+RESULT scenario=produce-threads lib=kafka-clients threads=1000 acks=-1 per_s=319069.9 p50_ms=2.5 p99_ms=12.6 client_cpu_s_per_100k=0.8 threads_peak=17 rss_mb=247
+RESULT scenario=produce-threads lib=kafka-clients threads=1000 acks=1 per_s=336744.8 p50_ms=2.4 p99_ms=11.5 client_cpu_s_per_100k=0.8 threads_peak=17 rss_mb=244
+RESULT scenario=consume lib=kafka-clients size=100 records=3000000 per_s=4896340.4 mb_per_s=467.0 client_cpu_s_per_100k=0.031 threads_peak=9 rss_mb=453
+RESULT scenario=consume lib=kafka-clients size=1024 records=500000 per_s=716598.1 mb_per_s=699.8 client_cpu_s_per_100k=0.222 threads_peak=9 rss_mb=416
+RESULT scenario=consume-group lib=kafka-clients size=100 records=3000000 per_s=2973330.0 mb_per_s=283.6 client_cpu_s_per_100k=0.025 threads_peak=9 rss_mb=471
+RESULT scenario=e2e lib=kafka-clients samples=3000 p50_ms=0.5 p99_ms=2.6 p999_ms=4.5 rss_mb=181

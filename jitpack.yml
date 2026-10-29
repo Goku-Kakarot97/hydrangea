@@ -1,0 +1,5 @@
+# JitPack (https://jitpack.io/#Goku-Kakarot97/hydrangea): builds the library from a tag without the Docker-backed tests
+jdk:
+  - openjdk21
+install:
+  - mvn -B -DskipTests install

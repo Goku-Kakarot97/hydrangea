@@ -1,0 +1,49 @@
+# Capacity sweep (benchmark/src/h2/CapLoad.java + bench/HttpLoad.java) against hydrangea-cap-server, which is limited to 0.5 CPU.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hydrangea-cap-load
+  labels: {app.kubernetes.io/part-of: hydrangea-bench}
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 1800
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels: {app.kubernetes.io/part-of: hydrangea-bench, app: hydrangea-cap-load}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: load
+          image: eclipse-temurin:21-jre
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              H=hydrangea-cap-server.iris.svc.cluster.local
+              CP=/jars/hydrangea.jar:/jars/bench.jar
+              C() { echo "## $*"; java -Xmx256m -cp $CP h2.CapLoad $H 8080 "$@" 2>&1 | grep -E "RESULT|Exception"; }
+              W() { echo "## http/1.1 $*"; java -Xmx256m -cp $CP bench.HttpLoad "$@" host=$H 2>&1 | grep -E "RESULT|ERROR-KIND"; }
+              for round in 1 2; do
+                echo "=== round $round"
+                W http 8080 16  2 5 15 path=/plain
+                W http 8080 64  2 5 15 path=/plain
+                W http 8080 256 2 5 15 path=/plain
+                W http 8080 64  2 5 15 method=POST path=/echo body=1024
+                # scenario inflight connections warmup seconds ioThreads
+                C h2-plain 16  2 5 15 2
+                C h2-plain 64  2 5 15 2
+                C h2-plain 256 4 5 15 2
+                C h2-echo1k 64 2 5 15 2
+                C grpc-16 16  2 5 15 2
+                C grpc-16 64  2 5 15 2
+                C grpc-16 256 4 5 15 2
+                C grpc-4k 64  2 5 15 2
+              done
+              echo DONE
+          resources:
+            requests: {cpu: "1", memory: 512Mi}
+            limits: {cpu: "2", memory: 640Mi}
+          volumeMounts: [{name: jars, mountPath: /jars}]
+      volumes:
+        - name: jars
+          configMap: {name: hydrangea-cap-jars}

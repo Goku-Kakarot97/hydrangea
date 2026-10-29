@@ -1,0 +1,121 @@
+# Hydrangea vs Undertow (tuned, and tuned with the handler dispatched to the worker pool), each limited to 0.5 CPU, one running at a time (scale the others to 0).
+# Same two routes (GET /plain, POST /echo), 1 I/O thread, heap 256 MB. Undertow's jars come from Maven Central through an init container (ConfigMap hydrangea-ut-urls).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bench-http-hydrangea
+  labels: {app.kubernetes.io/part-of: hydrangea-bench, app: bench-http-hydrangea}
+spec:
+  replicas: 0
+  selector: {matchLabels: {app: bench-http-hydrangea}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/part-of: hydrangea-bench, app: bench-http-hydrangea}
+    spec:
+      initContainers:
+        - name: deps
+          image: eclipse-temurin:21-jre
+          command: ["/bin/sh", "-c", "mkdir -p /deps && cd /deps && while read p; do curl -fsSL -O https://repo1.maven.org/maven2/$p || exit 1; done < /urls/urls.txt"]
+          volumeMounts: [{name: deps, mountPath: /deps}, {name: urls, mountPath: /urls}]
+      containers:
+        - name: server
+          image: eclipse-temurin:21-jre
+          command: ["/bin/sh", "-c", "exec java -Xms192m -Xmx256m -Dh2=true -cp \"/jars/hydrangea.jar:/jars/bench.jar:/deps/*\" servers.HydrangeaHttpServer 8080 1 0.0.0.0"]
+          ports: [{containerPort: 8080}]
+          resources:
+            requests: {cpu: "500m", memory: 512Mi}
+            limits: {cpu: "500m", memory: 640Mi}
+          readinessProbe: {tcpSocket: {port: 8080}, initialDelaySeconds: 3, periodSeconds: 3}
+          volumeMounts: [{name: jars, mountPath: /jars}, {name: deps, mountPath: /deps}]
+      volumes:
+        - name: jars
+          configMap: {name: hydrangea-ut-jars}
+        - name: urls
+          configMap: {name: hydrangea-ut-urls}
+        - name: deps
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: bench-http-hydrangea, labels: {app.kubernetes.io/part-of: hydrangea-bench}}
+spec: {type: ClusterIP, selector: {app: bench-http-hydrangea}, ports: [{port: 8080, targetPort: 8080}]}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bench-http-utuned
+  labels: {app.kubernetes.io/part-of: hydrangea-bench, app: bench-http-utuned}
+spec:
+  replicas: 0
+  selector: {matchLabels: {app: bench-http-utuned}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/part-of: hydrangea-bench, app: bench-http-utuned}
+    spec:
+      initContainers:
+        - name: deps
+          image: eclipse-temurin:21-jre
+          command: ["/bin/sh", "-c", "mkdir -p /deps && cd /deps && while read p; do curl -fsSL -O https://repo1.maven.org/maven2/$p || exit 1; done < /urls/urls.txt"]
+          volumeMounts: [{name: deps, mountPath: /deps}, {name: urls, mountPath: /urls}]
+      containers:
+        - name: server
+          image: eclipse-temurin:21-jre
+          command: ["/bin/sh", "-c", "exec java -Xms192m -Xmx256m -cp \"/jars/hydrangea.jar:/jars/bench.jar:/deps/*\" UndertowBenchServer 8080 1 0.0.0.0 h2,tuned"]
+          ports: [{containerPort: 8080}]
+          resources:
+            requests: {cpu: "500m", memory: 512Mi}
+            limits: {cpu: "500m", memory: 640Mi}
+          readinessProbe: {tcpSocket: {port: 8080}, initialDelaySeconds: 3, periodSeconds: 3}
+          volumeMounts: [{name: jars, mountPath: /jars}, {name: deps, mountPath: /deps}]
+      volumes:
+        - name: jars
+          configMap: {name: hydrangea-ut-jars}
+        - name: urls
+          configMap: {name: hydrangea-ut-urls}
+        - name: deps
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: bench-http-utuned, labels: {app.kubernetes.io/part-of: hydrangea-bench}}
+spec: {type: ClusterIP, selector: {app: bench-http-utuned}, ports: [{port: 8080, targetPort: 8080}]}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bench-http-udispatch
+  labels: {app.kubernetes.io/part-of: hydrangea-bench, app: bench-http-udispatch}
+spec:
+  replicas: 0
+  selector: {matchLabels: {app: bench-http-udispatch}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/part-of: hydrangea-bench, app: bench-http-udispatch}
+    spec:
+      initContainers:
+        - name: deps
+          image: eclipse-temurin:21-jre
+          command: ["/bin/sh", "-c", "mkdir -p /deps && cd /deps && while read p; do curl -fsSL -O https://repo1.maven.org/maven2/$p || exit 1; done < /urls/urls.txt"]
+          volumeMounts: [{name: deps, mountPath: /deps}, {name: urls, mountPath: /urls}]
+      containers:
+        - name: server
+          image: eclipse-temurin:21-jre
+          command: ["/bin/sh", "-c", "exec java -Xms192m -Xmx256m -cp \"/jars/hydrangea.jar:/jars/bench.jar:/deps/*\" UndertowBenchServer 8080 1 0.0.0.0 h2,tuned,dispatch"]
+          ports: [{containerPort: 8080}]
+          resources:
+            requests: {cpu: "500m", memory: 512Mi}
+            limits: {cpu: "500m", memory: 640Mi}
+          readinessProbe: {tcpSocket: {port: 8080}, initialDelaySeconds: 3, periodSeconds: 3}
+          volumeMounts: [{name: jars, mountPath: /jars}, {name: deps, mountPath: /deps}]
+      volumes:
+        - name: jars
+          configMap: {name: hydrangea-ut-jars}
+        - name: urls
+          configMap: {name: hydrangea-ut-urls}
+        - name: deps
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: bench-http-udispatch, labels: {app.kubernetes.io/part-of: hydrangea-bench}}
+spec: {type: ClusterIP, selector: {app: bench-http-udispatch}, ports: [{port: 8080, targetPort: 8080}]}

@@ -1,0 +1,1 @@
+RESULT scenario=publish lib=paho qos=2 completed_per_s=41979.6 received_per_s=41979.4 mb_per_s=5.4 client_cpu_s_per_100k=7.1 issued=534244 received_total=534244 unfinished_at_end=0 lost=0 threads_peak=20 rss_mb=230

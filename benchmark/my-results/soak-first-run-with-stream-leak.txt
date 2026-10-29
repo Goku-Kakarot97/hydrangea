@@ -1,0 +1,10 @@
+t= 15s heap=   4 MB threads= 24 sessions=16 ops=10804 unexpected=313
+t= 30s heap=   3 MB threads= 24 sessions=15 ops=19599 unexpected=586
+t= 45s heap=   4 MB threads= 24 sessions=15 ops=28663 unexpected=831
+t= 60s heap=   4 MB threads= 24 sessions=15 ops=32748 unexpected=945
+t= 75s heap=   3 MB threads= 24 sessions=15 ops=38815 unexpected=1112
+t= 90s heap=   4 MB threads= 24 sessions=17 ops=43409 unexpected=1205
+operations: {batch=4425, big=993, insert=6754, query=17858, stream=4417, timeout=4506, tx=4488}
+stray kills that hit the next call: 239
+unexpected: {big: MyException: Data too long for column 'b' at row 1 (error 1406, SQLSTATE 22001)=1205}
+RESULT seconds=90 workers=32 conns=8 cache=64 distinct=300 ops=43441 ops_per_s=482 heap_first_third_mb=4 heap_last_third_mb=4 max_prepared_on_a_connection=216 stray_kills=239 unexpected=1205

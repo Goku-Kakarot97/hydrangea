@@ -1,0 +1,7 @@
+READY
+health t=10 heapMB=191 oldGenAfterGcMB=0 threads=12 fds=604 active=584 opened=154981 closed=154402 rejected=0 http=216415 timeouts=0 maxBlockMs=37
+health t=20 heapMB=362 oldGenAfterGcMB=0 threads=12 fds=601 active=580 opened=355259 closed=354679 rejected=0 http=495431 timeouts=0 maxBlockMs=43
+health t=30 heapMB=126 oldGenAfterGcMB=0 threads=12 fds=596 active=576 opened=518551 closed=517975 rejected=0 http=734240 timeouts=0 maxBlockMs=56
+health t=40 heapMB=78 oldGenAfterGcMB=0 threads=12 fds=597 active=577 opened=554203 closed=553626 rejected=0 http=848770 timeouts=0 maxBlockMs=43
+health t=50 heapMB=122 oldGenAfterGcMB=0 threads=12 fds=599 active=579 opened=554692 closed=554113 rejected=0 http=931534 timeouts=0 maxBlockMs=19
+health t=60 heapMB=132 oldGenAfterGcMB=0 threads=12 fds=598 active=578 opened=555183 closed=554605 rejected=0 http=1012006 timeouts=0 maxBlockMs=65

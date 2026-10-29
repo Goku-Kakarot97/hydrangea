@@ -1,0 +1,41 @@
+# One load run against __TARGET__ (benchmark/src/bench/HttpLoad.java for HTTP/1.1 and benchmark/src/h2/CapLoad.java for h2c; neither depends on a server library).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: __NAME__
+  labels: {app.kubernetes.io/part-of: hydrangea-bench}
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 900
+  template:
+    metadata:
+      labels: {app.kubernetes.io/part-of: hydrangea-bench, app: __NAME__}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: load
+          image: eclipse-temurin:21-jre
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              H=__TARGET__.iris.svc.cluster.local
+              CP=/jars/hydrangea.jar:/jars/bench.jar
+              W() { echo "## http/1.1 $*"; java -Xmx256m -cp $CP bench.HttpLoad http 8080 "$@" host=$H 2>&1 | grep -E "RESULT|ERROR-KIND|Exception"; }
+              C() { echo "## h2c $*"; java -Xmx256m -cp $CP h2.CapLoad $H 8080 "$@" 2>&1 | grep -E "RESULT|Exception"; }
+              # http: conns threads warmup seconds opts
+              W 16  2 5 15 path=/plain
+              W 64  2 5 15 path=/plain
+              W 256 2 5 15 path=/plain
+              W 64  2 5 15 method=POST path=/echo body=1024
+              # h2c: scenario inflight connections warmup seconds ioThreads
+              C h2-plain 64  2 5 15 2
+              C h2-plain 256 4 5 15 2
+              C h2-echo1k 64 2 5 15 2
+              echo DONE
+          resources:
+            requests: {cpu: "1", memory: 512Mi}
+            limits: {cpu: "2", memory: 640Mi}
+          volumeMounts: [{name: jars, mountPath: /jars}]
+      volumes:
+        - name: jars
+          configMap: {name: hydrangea-ut-jars}

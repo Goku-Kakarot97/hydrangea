@@ -1,0 +1,83 @@
+# tx 8:64, fsync off, Linux Docker. exp1: loops sweep; exp3: loops x conns; exp4: client on CPUs 0-3, server on CPUs 4-7
+## exp1
+loops=1
+lib=hydrangea scenario=tx conns=8 callers=64 qps=21056 p50_us=2490 p99_us=12058 cpu_us_per_query=38.0 caller_min=1641 caller_med=1645 caller_max=1649 top10_share=0.094
+loops=2
+lib=hydrangea scenario=tx conns=8 callers=64 qps=20639 p50_us=2621 p99_us=8388 cpu_us_per_query=55.5 caller_min=1609 caller_med=1613 caller_max=1617 top10_share=0.094
+loops=4
+lib=hydrangea scenario=tx conns=8 callers=64 qps=21536 p50_us=2621 p99_us=6815 cpu_us_per_query=67.7 caller_min=1678 caller_med=1683 caller_max=1687 top10_share=0.094
+loops=8
+lib=hydrangea scenario=tx conns=8 callers=64 qps=40040 p50_us=1179 p99_us=6815 cpu_us_per_query=58.6 caller_min=3094 caller_med=3130 caller_max=3153 top10_share=0.094
+conns16
+lib=hydrangea scenario=tx conns=16 callers=64 qps=28844 p50_us=1835 p99_us=8912 cpu_us_per_query=58.7 caller_min=2241 caller_med=2253 caller_max=2267 top10_share=0.094
+pgjdbc 16
+lib=pgjdbc scenario=tx conns=16 callers=64 qps=37124 p50_us=262 p99_us=22020 cpu_us_per_query=84.3 caller_min=1270 caller_med=2918 caller_max=3278 top10_share=0.102
+pgjdbc 8
+lib=pgjdbc scenario=tx conns=8 callers=64 qps=41158 p50_us=131 p99_us=20971 cpu_us_per_query=70.6 caller_min=1146 caller_med=3253 caller_max=3715 top10_share=0.105
+loops=1
+lib=hydrangea scenario=tx conns=8 callers=64 qps=18333 p50_us=2359 p99_us=23068 cpu_us_per_query=40.7 caller_min=1429 caller_med=1432 caller_max=1436 top10_share=0.094
+loops=2
+lib=hydrangea scenario=tx conns=8 callers=64 qps=22862 p50_us=2359 p99_us=8388 cpu_us_per_query=40.6 caller_min=1782 caller_med=1786 caller_max=1790 top10_share=0.094
+loops=4
+lib=hydrangea scenario=tx conns=8 callers=64 qps=21455 p50_us=2621 p99_us=6029 cpu_us_per_query=68.6 caller_min=1669 caller_med=1676 caller_max=1682 top10_share=0.094
+loops=8
+lib=hydrangea scenario=tx conns=8 callers=64 qps=38831 p50_us=1114 p99_us=7602 cpu_us_per_query=59.2 caller_min=3011 caller_med=3034 caller_max=3062 top10_share=0.094
+conns16
+lib=hydrangea scenario=tx conns=16 callers=64 qps=27985 p50_us=1900 p99_us=8388 cpu_us_per_query=61.4 caller_min=2173 caller_med=2186 caller_max=2202 top10_share=0.094
+pgjdbc 16
+lib=pgjdbc scenario=tx conns=16 callers=64 qps=29192 p50_us=294 p99_us=28311 cpu_us_per_query=102.9 caller_min=1006 caller_med=2310 caller_max=2582 top10_share=0.102
+pgjdbc 8
+lib=pgjdbc scenario=tx conns=8 callers=64 qps=41054 p50_us=131 p99_us=20971 cpu_us_per_query=71.2 caller_min=1395 caller_med=3267 caller_max=3729 top10_share=0.105
+EXPDONE
+## exp3
+loops=4 conns=4
+conns=4 callers=64 qps=10890 p50_us=4194 p99_us=30408 cpu_us_per_query=105.2
+loops=4 conns=8
+conns=8 callers=64 qps=23225 p50_us=2490 p99_us=5767 cpu_us_per_query=61.9
+loops=4 conns=16
+conns=16 callers=64 qps=33117 p50_us=1769 p99_us=3932 cpu_us_per_query=51.5
+loops=8 conns=8
+conns=8 callers=64 qps=47148 p50_us=1048 p99_us=5242 cpu_us_per_query=53.6
+loops=8 conns=16
+conns=16 callers=64 qps=42550 p50_us=1114 p99_us=10485 cpu_us_per_query=54.9
+loops=16 conns=16
+conns=16 callers=64 qps=46273 p50_us=983 p99_us=11010 cpu_us_per_query=55.0
+loops=2 conns=2
+conns=2 callers=64 qps=8581 p50_us=7077 p99_us=16252 cpu_us_per_query=54.3
+loops=1 conns=1
+conns=1 callers=64 qps=4618 p50_us=13107 p99_us=37748 cpu_us_per_query=68.0
+loops=2 conns=8
+conns=8 callers=64 qps=22997 p50_us=2359 p99_us=6815 cpu_us_per_query=39.4
+loops=4 conns=4
+conns=4 callers=64 qps=14216 p50_us=4194 p99_us=7077 cpu_us_per_query=92.7
+loops=4 conns=8
+conns=8 callers=64 qps=24578 p50_us=2490 p99_us=5242 cpu_us_per_query=67.6
+loops=4 conns=16
+conns=16 callers=64 qps=28963 p50_us=1769 p99_us=8126 cpu_us_per_query=58.9
+loops=8 conns=8
+conns=8 callers=64 qps=48972 p50_us=1015 p99_us=4980 cpu_us_per_query=47.6
+loops=8 conns=16
+conns=16 callers=64 qps=41478 p50_us=1114 p99_us=9961 cpu_us_per_query=54.4
+loops=16 conns=16
+conns=16 callers=64 qps=45785 p50_us=1015 p99_us=9961 cpu_us_per_query=58.1
+loops=2 conns=2
+conns=2 callers=64 qps=8807 p50_us=6815 p99_us=11010 cpu_us_per_query=73.1
+loops=1 conns=1
+conns=1 callers=64 qps=4842 p50_us=12582 p99_us=16777 cpu_us_per_query=63.6
+loops=2 conns=8
+conns=8 callers=64 qps=23154 p50_us=2359 p99_us=7077 cpu_us_per_query=39.8
+EXPDONE
+## exp4
+pinned hydrangea loops=4
+lib=hydrangea scenario=tx conns=8 callers=64 qps=20219 p50_us=2621 p99_us=9437 cpu_us_per_query=73.7
+pinned hydrangea loops=8
+lib=hydrangea scenario=tx conns=8 callers=64 qps=20551 p50_us=2883 p99_us=5242 cpu_us_per_query=92.4
+pinned pgjdbc
+lib=pgjdbc scenario=tx conns=8 callers=64 qps=17856 p50_us=425 p99_us=65011 cpu_us_per_query=123.4
+pinned hydrangea loops=4
+lib=hydrangea scenario=tx conns=8 callers=64 qps=21429 p50_us=2621 p99_us=6291 cpu_us_per_query=74.3
+pinned hydrangea loops=8
+lib=hydrangea scenario=tx conns=8 callers=64 qps=18799 p50_us=2883 p99_us=9961 cpu_us_per_query=96.4
+pinned pgjdbc
+lib=pgjdbc scenario=tx conns=8 callers=64 qps=16739 p50_us=442 p99_us=71303 cpu_us_per_query=125.9
+EXPDONE

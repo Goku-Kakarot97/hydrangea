@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>io.hydrangea</groupId>
+        <groupId>io.github.goku-kakarot97</groupId>
         <artifactId>hydrangea-parent</artifactId>
         <version>1.0.1</version>
     </parent>
@@ -13,64 +13,72 @@
     <name>Hydrangea examples</name>
     <description>Runnable examples, the tests that span several modules (including ArchitectureTest), and the build step that merges every module's classes into target/classes at the repository root (so "java -cp target/classes io.hydrangea.examples.EchoServer" and the scripts under benchmark/, interop/ ... keep working). Nothing is published from here.</description>
 
+    <properties>
+        <!-- examples and cross-module tests: built with the rest, never published -->
+        <maven.deploy.skip>true</maven.deploy.skip>
+        <maven.javadoc.skip>true</maven.javadoc.skip>
+        <maven.source.skip>true</maven.source.skip>
+        <gpg.skip>true</gpg.skip>
+    </properties>
+
     <dependencies>
         <dependency>
-            <groupId>io.hydrangea</groupId>
+            <groupId>io.github.goku-kakarot97</groupId>
             <artifactId>hydrangea-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.hydrangea</groupId>
+            <groupId>io.github.goku-kakarot97</groupId>
             <artifactId>hydrangea-quic</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.hydrangea</groupId>
+            <groupId>io.github.goku-kakarot97</groupId>
             <artifactId>hydrangea-http</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.hydrangea</groupId>
+            <groupId>io.github.goku-kakarot97</groupId>
             <artifactId>hydrangea-grpc</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.hydrangea</groupId>
+            <groupId>io.github.goku-kakarot97</groupId>
             <artifactId>hydrangea-amqp</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.hydrangea</groupId>
+            <groupId>io.github.goku-kakarot97</groupId>
             <artifactId>hydrangea-mqtt</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.hydrangea</groupId>
+            <groupId>io.github.goku-kakarot97</groupId>
             <artifactId>hydrangea-redis</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.hydrangea</groupId>
+            <groupId>io.github.goku-kakarot97</groupId>
             <artifactId>hydrangea-kafka</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.hydrangea</groupId>
+            <groupId>io.github.goku-kakarot97</groupId>
             <artifactId>hydrangea-postgres</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.hydrangea</groupId>
+            <groupId>io.github.goku-kakarot97</groupId>
             <artifactId>hydrangea-mysql</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.hydrangea</groupId>
+            <groupId>io.github.goku-kakarot97</groupId>
             <artifactId>hydrangea-sql</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.hydrangea</groupId>
+            <groupId>io.github.goku-kakarot97</groupId>
             <artifactId>hydrangea-core</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
@@ -82,7 +90,7 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.hydrangea</groupId>
+            <groupId>io.github.goku-kakarot97</groupId>
             <artifactId>hydrangea-http</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>

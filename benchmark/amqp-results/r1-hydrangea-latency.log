@@ -1,0 +1,1 @@
+RESULT scenario=latency lib=hydrangea p50_us=351 p90_us=537 p99_us=1994 p999_us=8710 max_us=37783 samples=20000

@@ -1,0 +1,1 @@
+RESULT scenario=publish-noconfirm lib=hydrangea msgs_per_s=125303.7 client_cpu_s_per_100k=0.1 sent_total=1539398 in_broker=1539398 lost=0 threads_peak=10 rss_mb=196

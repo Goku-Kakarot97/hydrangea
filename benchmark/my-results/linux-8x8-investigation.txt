@@ -1,0 +1,79 @@
+# Why Hydrangea's MySQL client was slower than Connector/J at 8 connections : 8 callers (Linux in Docker, client --cpus=4, mysql:8.4 --cpus=4, hydra-net)
+# select1 unless said otherwise; q/s and p50 of single 4-5 s runs
+
+## 1. loops sweep with the pool as it was (least-loaded connection, no loop affinity): 8:8
+loops=4  57 894 q/s p50 102 us      loops=8  91 772 p50 40 us      mysqlj-server 178 245 p50 21 us
+# CPU per query equal (22 vs 21 us): a latency problem, not a cost. tasks counter: no cross-loop hand-offs after the affinity fix (39-63 tasks per run, the maintenance timers)
+
+## 2. after the fix (pickSlot prefers an idle connection of the current loop), 8:8
+affinity loops=8  select1 175 319 / 179 297 q/s p50 20 us cpu 15 us      point 119 987 / 134 243 p50 24 us      (Connector/J server-prepared: select1 178 k, point 103-128 k)
+affinity loops=4  select1  62 867 /  69 247 p50 100 us                   point  54 502 /  59 342
+
+## 3. the environment: wake-up latency when few threads are busy (Connector/J, one dedicated connection per thread)
+1:1  12 539 q/s p50 65 us    4:4  46 685 p50 69 us    8:8  ~105 000 p50 21-36 us
+with 4 spinning threads in another container (CPUs kept awake): 1:1 8 486 p50 106 us (now contention)   4:4 91 711 p50 20 us   8:8 98 052 p50 40 us
+Hydrangea with the burner: loops=4 conns=4 78 967 p50 20 us; loops=8 conns=8 107 688 p50 36 us (level with Connector/J); loops=4 conns=8 64 496 p50 57 us; loops=4 conns=16 82 436 p50 73 us
+
+## 4. two connections on one loop (no pool: each caller bound to its own MyClient / PgClient, Direct.java)
+mysql     loops=8 conns=8 175 571 (21 946 per loop)   loops=8 conns=16  92 356 (11 544 per loop)   loops=4 conns=8 58 344   loops=4 conns=4 45 355   loops=4 conns=16 119 618 (29 904 per loop)   loops=16 conns=16 163 145
+postgres  loops=8 conns=8 231 292 (28 911 per loop)   loops=8 conns=16 106 723 (13 340 per loop)
+no cpu limit on the mysql container: loops=8 conns=8 180 503   loops=8 conns=16 103 724   (the same)
+from macOS to the container (0.5 ms RTT): loops=8 conns=8 14 780   loops=8 conns=16 19 874   loops=4 conns=16 21 774   (scales normally)
+echo server and client both hydrangea-core, 16-byte ping-pong (Echo.java): loops=8 conns=8 89 515   loops=8 conns=16 156 686   loops=4 conns=4 50 726   loops=4 conns=8 101 456   loops=4 conns=16 363 607   (scales normally: the loop is not the problem)
+spinning before epoll_wait (experiment, removed): loops=4 conns=8 62 372 -> 93 093 with 100 us of spin; loops=8 conns=16 104 598 -> 112 595 (8 spinning loops on a 4-CPU quota: confounded)
+
+## conclusion
+(1) the pool's cross-loop hand-off: fixed in MyPool and PgPool;  (2) the VM's idle wake-up latency: the same for every client, documented;
+(3) a loop driving exactly two connections of a thread-per-connection server on this VM runs at about 60% of a loop driving one: real, reproduced for both databases, absent with an echo
+server and absent over a slower link; the kernel side was not investigated. Benchmarks now default to one loop for each connection.
+
+## raw: loops sweep with affinity (myexp1.out)
+loops=4
+hydrangea scenario=select1 conns=8 callers=8 qps=57894 p50_us=102 p99_us=622 cpu_us_per_query=24.1
+loops=8
+hydrangea scenario=select1 conns=8 callers=8 qps=91772 p50_us=40 p99_us=507 cpu_us_per_query=22.2
+ref
+mysqlj-server scenario=select1 conns=8 callers=8 qps=178245 p50_us=21 p99_us=180 cpu_us_per_query=20.6
+loops=4
+hydrangea scenario=select1 conns=32 callers=32 qps=130551 p50_us=118 p99_us=1507 cpu_us_per_query=13.5
+loops=32
+hydrangea scenario=select1 conns=32 callers=32 qps=127249 p50_us=139 p99_us=1441 cpu_us_per_query=23.5
+ref
+mysqlj-server scenario=select1 conns=32 callers=32 qps=178307 p50_us=81 p99_us=1572 cpu_us_per_query=22.0
+loops=4
+hydrangea scenario=point conns=8 callers=8 qps=56713 p50_us=114 p99_us=409 cpu_us_per_query=25.4
+loops=8
+hydrangea scenario=point conns=8 callers=8 qps=95940 p50_us=26 p99_us=622 cpu_us_per_query=19.4
+ref
+mysqlj-server scenario=point conns=8 callers=8 qps=103239 p50_us=30 p99_us=425 cpu_us_per_query=26.5
+loops=4
+hydrangea scenario=point conns=32 callers=32 qps=73428 p50_us=147 p99_us=4718 cpu_us_per_query=19.9
+loops=32
+hydrangea scenario=point conns=32 callers=32 qps=24126 p50_us=172 p99_us=19922 cpu_us_per_query=113.7
+ref
+mysqlj-server scenario=point conns=32 callers=32 qps=39581 p50_us=131 p99_us=13631 cpu_us_per_query=87.9
+loops=4
+hydrangea scenario=select1 conns=8 callers=8 qps=44950 p50_us=110 p99_us=1245 cpu_us_per_query=30.8
+loops=8
+hydrangea scenario=select1 conns=8 callers=8 qps=77524 p50_us=53 p99_us=589 cpu_us_per_query=25.9
+ref
+mysqlj-server scenario=select1 conns=8 callers=8 qps=146453 p50_us=21 p99_us=344 cpu_us_per_query=24.6
+loops=4
+hydrangea scenario=select1 conns=32 callers=32 qps=111658 p50_us=131 p99_us=2490 cpu_us_per_query=18.2
+loops=32
+hydrangea scenario=select1 conns=32 callers=32 qps=68191 p50_us=118 p99_us=5242 cpu_us_per_query=40.4
+ref
+mysqlj-server scenario=select1 conns=32 callers=32 qps=87509 p50_us=81 p99_us=3932 cpu_us_per_query=43.2
+loops=4
+hydrangea scenario=point conns=8 callers=8 qps=50808 p50_us=122 p99_us=557 cpu_us_per_query=31.2
+loops=8
+hydrangea scenario=point conns=8 callers=8 qps=85810 p50_us=51 p99_us=475 cpu_us_per_query=22.4
+ref
+mysqlj-server scenario=point conns=8 callers=8 qps=113437 p50_us=30 p99_us=278 cpu_us_per_query=25.2
+loops=4
+hydrangea scenario=point conns=32 callers=32 qps=74283 p50_us=172 p99_us=4063 cpu_us_per_query=24.6
+loops=32
+hydrangea scenario=point conns=32 callers=32 qps=84179 p50_us=163 p99_us=3801 cpu_us_per_query=30.6
+ref
+mysqlj-server scenario=point conns=32 callers=32 qps=132959 p50_us=118 p99_us=1703 cpu_us_per_query=22.7
+EXPDONE

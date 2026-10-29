@@ -1,0 +1,1 @@
+RESULT scenario=publish lib=paho-nodelay qos=0 completed_per_s=541737.6 received_per_s=106671.6 mb_per_s=69.3 client_cpu_s_per_100k=1.5 issued=7170447 received_total=2429647 unfinished_at_end=0 lost=4740800 threads_peak=20 rss_mb=321

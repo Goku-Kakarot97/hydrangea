@@ -1,0 +1,4 @@
+SLF4J(W): No SLF4J providers were found.
+SLF4J(W): Defaulting to no-operation (NOP) logger implementation
+SLF4J(W): See https://www.slf4j.org/codes.html#noProviders for further details.
+RESULT scenario=publish-confirm lib=official msgs_per_s=2006.8 mb_per_s=131.5 client_cpu_s_per_100k=8.0 issued=24985 confirmed=24985 unconfirmed_at_end=0 in_broker=-1 threads_peak=9 rss_mb=207

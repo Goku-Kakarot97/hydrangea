@@ -1,0 +1,48 @@
+RESULT scenario=connect lib=hydrangea connections=500 per_s=665.6 p50_us=1245 p99_us=3932 client_cpu_ms_per_conn=0.7 threads_peak=10 rss_mb=66
+RESULT scenario=get lib=hydrangea threads=1 per_s=3131.9 p50_us=278 p99_us=1114 p999_us=1703 client_cpu_s_per_100k=4.5 setup_s=0.0 threads_peak=11 rss_mb=76
+RESULT scenario=get lib=hydrangea threads=32 per_s=65961.3 p50_us=409 p99_us=1310 p999_us=2228 client_cpu_s_per_100k=1.3 setup_s=0.0 threads_peak=42 rss_mb=209
+RESULT scenario=pipeline lib=hydrangea window=100 per_s=198036.0 client_cpu_s_per_100k=0.1 threads_peak=10 rss_mb=213
+RESULT scenario=pipeline lib=hydrangea window=100 per_s=128902.1 client_cpu_s_per_100k=0.1 threads_peak=10 rss_mb=206
+RESULT scenario=pipeline lib=hydrangea window=1000 per_s=623962.7 client_cpu_s_per_100k=0.1 threads_peak=10 rss_mb=214
+RESULT scenario=large lib=hydrangea size_kb=1 write_mb_per_s=2.9 read_mb_per_s=2.9 client_cpu_s_per_gb=84.6 rss_mb=61
+RESULT scenario=large lib=hydrangea size_kb=100 write_mb_per_s=67.6 read_mb_per_s=88.1 client_cpu_s_per_gb=2.6 rss_mb=169
+RESULT scenario=large lib=hydrangea size_kb=1024 write_mb_per_s=113.6 read_mb_per_s=138.7 client_cpu_s_per_gb=1.3 rss_mb=118
+RESULT scenario=large lib=hydrangea size_kb=8192 write_mb_per_s=124.5 read_mb_per_s=170.1 client_cpu_s_per_gb=0.8 rss_mb=158
+RESULT scenario=bulk-reply-mget lib=hydrangea threads=1 per_s=2397.3 p50_us=360 p99_us=1245 p999_us=3014 client_cpu_s_per_100k=6.4 setup_s=0.0 threads_peak=11 rss_mb=217
+RESULT scenario=bulk-reply-hgetall lib=hydrangea threads=1 per_s=1361.8 p50_us=688 p99_us=1769 p999_us=4063 client_cpu_s_per_100k=30.4 setup_s=0.0 threads_peak=11 rss_mb=220
+RESULT scenario=bulk-reply-lrange lib=hydrangea threads=1 per_s=448.6 p50_us=1966 p99_us=5505 p999_us=6815 client_cpu_s_per_100k=108.2 setup_s=0.0 threads_peak=11 rss_mb=214
+RESULT scenario=bulk-reply-lrange lib=hydrangea threads=8 per_s=693.7 p50_us=11010 p99_us=19922 p999_us=88080 client_cpu_s_per_100k=63.7 setup_s=0.0 threads_peak=18 rss_mb=207
+RESULT scenario=pubsub lib=hydrangea published_per_s=141928.9 received_per_s=141928.9 client_cpu_s_per_100k=0.2 threads_peak=10 rss_mb=213
+RESULT scenario=tx lib=hydrangea threads=8 per_s=21530.7 p50_us=311 p99_us=1245 p999_us=1900 client_cpu_s_per_100k=1.7 setup_s=0.0 threads_peak=18 rss_mb=209
+RESULT scenario=connect lib=hydrangea-conns connections=500 per_s=699.2 p50_us=1179 p99_us=3145 client_cpu_ms_per_conn=0.6 threads_peak=10 rss_mb=65
+RESULT scenario=get lib=hydrangea-conns threads=1 per_s=3105.8 p50_us=278 p99_us=1114 p999_us=1835 client_cpu_s_per_100k=5.2 setup_s=0.0 threads_peak=11 rss_mb=82
+RESULT scenario=get lib=hydrangea-conns threads=32 per_s=30515.9 p50_us=950 p99_us=2621 p999_us=5767 client_cpu_s_per_100k=2.4 setup_s=0.0 threads_peak=49 rss_mb=175
+RESULT scenario=pipeline lib=hydrangea-conns window=100 per_s=199546.7 client_cpu_s_per_100k=0.1 threads_peak=10 rss_mb=212
+RESULT scenario=pipeline lib=hydrangea-conns window=100 per_s=160952.5 client_cpu_s_per_100k=0.1 threads_peak=10 rss_mb=212
+RESULT scenario=pipeline lib=hydrangea-conns window=1000 per_s=616407.0 client_cpu_s_per_100k=0.1 threads_peak=10 rss_mb=213
+RESULT scenario=large lib=hydrangea-conns size_kb=1 write_mb_per_s=3.0 read_mb_per_s=3.1 client_cpu_s_per_gb=83.8 rss_mb=61
+RESULT scenario=large lib=hydrangea-conns size_kb=100 write_mb_per_s=69.8 read_mb_per_s=85.9 client_cpu_s_per_gb=2.6 rss_mb=169
+RESULT scenario=large lib=hydrangea-conns size_kb=1024 write_mb_per_s=111.1 read_mb_per_s=145.6 client_cpu_s_per_gb=1.3 rss_mb=118
+RESULT scenario=large lib=hydrangea-conns size_kb=8192 write_mb_per_s=126.2 read_mb_per_s=165.8 client_cpu_s_per_gb=0.8 rss_mb=158
+RESULT scenario=bulk-reply-mget lib=hydrangea-conns threads=1 per_s=2254.0 p50_us=376 p99_us=1245 p999_us=2883 client_cpu_s_per_100k=7.6 setup_s=0.0 threads_peak=11 rss_mb=216
+RESULT scenario=bulk-reply-hgetall lib=hydrangea-conns threads=1 per_s=1391.5 p50_us=589 p99_us=1769 p999_us=4718 client_cpu_s_per_100k=29.5 setup_s=0.0 threads_peak=11 rss_mb=220
+RESULT scenario=bulk-reply-lrange lib=hydrangea-conns threads=1 per_s=452.3 p50_us=1966 p99_us=5505 p999_us=6815 client_cpu_s_per_100k=107.5 setup_s=0.0 threads_peak=11 rss_mb=214
+RESULT scenario=bulk-reply-lrange lib=hydrangea-conns threads=8 per_s=756.0 p50_us=10485 p99_us=20971 p999_us=33554 client_cpu_s_per_100k=65.2 setup_s=0.1 threads_peak=25 rss_mb=218
+RESULT scenario=pubsub lib=hydrangea-conns published_per_s=141582.5 received_per_s=141582.5 client_cpu_s_per_100k=0.2 threads_peak=10 rss_mb=213
+RESULT scenario=tx lib=hydrangea-conns threads=8 per_s=10489.9 p50_us=622 p99_us=1638 p999_us=3014 client_cpu_s_per_100k=3.3 setup_s=0.0 threads_peak=25 rss_mb=174
+RESULT scenario=connect lib=jedis connections=500 per_s=1094.6 p50_us=753 p99_us=2228 client_cpu_ms_per_conn=0.3 threads_peak=7 rss_mb=83
+RESULT scenario=get lib=jedis threads=1 per_s=3293.0 p50_us=262 p99_us=1114 p999_us=1507 client_cpu_s_per_100k=3.1 setup_s=0.0 threads_peak=8 rss_mb=91
+RESULT scenario=get lib=jedis threads=32 per_s=30666.1 p50_us=950 p99_us=2490 p999_us=6553 client_cpu_s_per_100k=2.0 setup_s=0.0 threads_peak=39 rss_mb=136
+RESULT scenario=pipeline lib=jedis window=100 per_s=190692.2 client_cpu_s_per_100k=0.0 threads_peak=6 rss_mb=205
+RESULT scenario=pipeline lib=jedis window=100 per_s=150787.8 client_cpu_s_per_100k=0.1 threads_peak=6 rss_mb=206
+RESULT scenario=pipeline lib=jedis window=1000 per_s=433777.6 client_cpu_s_per_100k=0.0 threads_peak=6 rss_mb=215
+RESULT scenario=large lib=jedis size_kb=1 write_mb_per_s=3.1 read_mb_per_s=3.2 client_cpu_s_per_gb=48.0 rss_mb=76
+RESULT scenario=large lib=jedis size_kb=100 write_mb_per_s=69.0 read_mb_per_s=82.2 client_cpu_s_per_gb=1.9 rss_mb=176
+RESULT scenario=large lib=jedis size_kb=1024 write_mb_per_s=113.4 read_mb_per_s=159.6 client_cpu_s_per_gb=1.4 rss_mb=134
+RESULT scenario=large lib=jedis size_kb=8192 write_mb_per_s=124.4 read_mb_per_s=163.7 client_cpu_s_per_gb=0.8 rss_mb=173
+RESULT scenario=bulk-reply-mget lib=jedis threads=1 per_s=2353.6 p50_us=360 p99_us=1310 p999_us=3407 client_cpu_s_per_100k=6.7 setup_s=0.0 threads_peak=8 rss_mb=218
+RESULT scenario=bulk-reply-hgetall lib=jedis threads=1 per_s=1483.0 p50_us=589 p99_us=1572 p999_us=3145 client_cpu_s_per_100k=25.4 setup_s=0.0 threads_peak=8 rss_mb=220
+RESULT scenario=bulk-reply-lrange lib=jedis threads=1 per_s=477.6 p50_us=1703 p99_us=5242 p999_us=6815 client_cpu_s_per_100k=91.3 setup_s=0.1 threads_peak=8 rss_mb=219
+RESULT scenario=bulk-reply-lrange lib=jedis threads=8 per_s=754.9 p50_us=10485 p99_us=20971 p999_us=26214 client_cpu_s_per_100k=54.7 setup_s=0.1 threads_peak=15 rss_mb=222
+RESULT scenario=pubsub lib=jedis published_per_s=135392.4 received_per_s=135392.4 client_cpu_s_per_100k=0.1 threads_peak=7 rss_mb=215
+RESULT scenario=tx lib=jedis threads=8 per_s=6600.9 p50_us=983 p99_us=2359 p999_us=5767 client_cpu_s_per_100k=4.8 setup_s=0.1 threads_peak=15 rss_mb=180

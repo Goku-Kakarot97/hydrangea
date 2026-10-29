@@ -1,0 +1,13 @@
+RESULT way=hydrangea-batch rows=200000 chunk=1000 seconds=4.993 rows_per_s=40059 cpu_seconds=1.640 cpu_us_per_row=8.2
+RESULT way=mysqlj-batch rows=200000 chunk=1000 seconds=12.375 rows_per_s=16162 cpu_seconds=4.590 cpu_us_per_row=23.0
+RESULT way=hydrangea-pipelined rows=200000 chunk=1000 seconds=5.183 rows_per_s=38589 cpu_seconds=2.340 cpu_us_per_row=11.7
+RESULT way=mysqlj-rewrite rows=200000 chunk=1000 seconds=1.336 rows_per_s=149706 cpu_seconds=0.310 cpu_us_per_row=1.6
+RESULT way=hydrangea-multirow rows=200000 chunk=1000 seconds=0.905 rows_per_s=221005 cpu_seconds=0.130 cpu_us_per_row=0.7
+RESULT way=mysqlj-multirow rows=200000 chunk=1000 seconds=0.868 rows_per_s=230495 cpu_seconds=0.160 cpu_us_per_row=0.8
+RESULT way=hydrangea-stream rows=200000 chunk=1000 seconds=0.191 rows_per_s=1047884 cpu_seconds=0.070 cpu_us_per_row=0.4
+RESULT way=mysqlj-cursor rows=200000 chunk=1000 seconds=0.196 rows_per_s=1019996 cpu_seconds=0.090 cpu_us_per_row=0.5
+RESULT way=hydrangea-whole rows=200000 chunk=1000 seconds=0.113 rows_per_s=1764777 cpu_seconds=0.200 cpu_us_per_row=1.0
+RESULT way=mysqlj-whole rows=200000 chunk=1000 seconds=0.147 rows_per_s=1359161 cpu_seconds=0.250 cpu_us_per_row=1.3
+RESULT way=hydrangea-stream rows=200000 chunk=1000 seconds=0.166 rows_per_s=1205415 cpu_seconds=0.060 cpu_us_per_row=0.3
+RESULT way=mysqlj-cursor rows=200000 chunk=1000 seconds=0.209 rows_per_s=955616 cpu_seconds=0.090 cpu_us_per_row=0.5
+done

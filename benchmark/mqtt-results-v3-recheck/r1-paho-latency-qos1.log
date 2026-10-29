@@ -1,0 +1,1 @@
+RESULT scenario=latency lib=paho qos=1 p50_us=77 p90_us=111 p99_us=214 p999_us=670 max_us=45949 samples=20000

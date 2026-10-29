@@ -1,0 +1,52 @@
+=== round 1
+## clear grpc-16
+RESULT scenario=grpc-16 inflight=64 conns=2 ops=51254 p50=490 p90=800 p99=40000 p999=40000 errors=0 
+## tls grpc-16
+RESULT scenario=grpc-16 inflight=64 conns=2 ops=14203 p50=2510 p90=6320 p99=36090 p999=40000 errors=0 
+## clear grpc-4k
+RESULT scenario=grpc-4k inflight=64 conns=2 ops=23431 p50=1680 p90=10140 p99=12640 p999=17900 errors=0 
+## tls grpc-4k
+RESULT scenario=grpc-4k inflight=64 conns=2 ops=9857 p50=4020 p90=15810 p99=27600 p999=40000 errors=0 
+## clear h2-plain
+RESULT scenario=h2-plain inflight=64 conns=2 ops=124309 p50=260 p90=490 p99=1060 p999=40000 errors=0 
+## tls h2-plain
+RESULT scenario=h2-plain inflight=64 conns=2 ops=28201 p50=1190 p90=1880 p99=40000 p999=40000 errors=0 
+## clear h2-echo1k
+RESULT scenario=h2-echo1k inflight=64 conns=2 ops=89671 p50=390 p90=650 p99=1760 p999=40000 errors=0 
+## tls h2-echo1k
+RESULT scenario=h2-echo1k inflight=64 conns=2 ops=17763 p50=2000 p90=4120 p99=34420 p999=40000 errors=0 
+=== round 2
+## tls grpc-16
+RESULT scenario=grpc-16 inflight=64 conns=2 ops=13806 p50=2550 p90=5950 p99=39420 p999=40000 errors=0 
+## clear grpc-16
+RESULT scenario=grpc-16 inflight=64 conns=2 ops=68712 p50=460 p90=730 p99=2990 p999=40000 errors=0 
+## tls grpc-4k
+RESULT scenario=grpc-4k inflight=64 conns=2 ops=10080 p50=4050 p90=15930 p99=23440 p999=34230 errors=0 
+## clear grpc-4k
+RESULT scenario=grpc-4k inflight=64 conns=2 ops=23972 p50=1660 p90=10200 p99=12330 p999=15140 errors=0 
+## tls h2-plain
+RESULT scenario=h2-plain inflight=64 conns=2 ops=28173 p50=1190 p90=1960 p99=40000 p999=40000 errors=0 
+## clear h2-plain
+RESULT scenario=h2-plain inflight=64 conns=2 ops=124527 p50=260 p90=490 p99=980 p999=40000 errors=0 
+## tls h2-echo1k
+RESULT scenario=h2-echo1k inflight=64 conns=2 ops=18417 p50=1990 p90=4110 p99=32170 p999=40000 errors=0 
+## clear h2-echo1k
+RESULT scenario=h2-echo1k inflight=64 conns=2 ops=88866 p50=390 p90=670 p99=1830 p999=40000 errors=0 
+=== round 3
+## clear grpc-16
+RESULT scenario=grpc-16 inflight=64 conns=2 ops=68812 p50=460 p90=730 p99=3410 p999=40000 errors=0 
+## tls grpc-16
+RESULT scenario=grpc-16 inflight=64 conns=2 ops=13787 p50=2670 p90=7650 p99=35130 p999=40000 errors=0 
+## clear grpc-4k
+RESULT scenario=grpc-4k inflight=64 conns=2 ops=24389 p50=1640 p90=9910 p99=12080 p999=16870 errors=0 
+## tls grpc-4k
+RESULT scenario=grpc-4k inflight=64 conns=2 ops=10021 p50=4010 p90=15830 p99=25870 p999=34500 errors=0 
+## clear h2-plain
+RESULT scenario=h2-plain inflight=64 conns=2 ops=116655 p50=280 p90=480 p99=1110 p999=40000 errors=0 
+## tls h2-plain
+RESULT scenario=h2-plain inflight=64 conns=2 ops=28116 p50=1230 p90=2100 p99=40000 p999=40000 errors=0 
+## clear h2-echo1k
+RESULT scenario=h2-echo1k inflight=64 conns=2 ops=85672 p50=420 p90=680 p99=2070 p999=40000 errors=0 
+## tls h2-echo1k
+RESULT scenario=h2-echo1k inflight=64 conns=2 ops=18797 p50=1980 p90=4800 p99=24030 p999=38840 errors=0 
+DONE

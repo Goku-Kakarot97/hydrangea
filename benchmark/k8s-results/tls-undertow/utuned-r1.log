@@ -1,0 +1,13 @@
+## tls h1-plain 64 64 5 15 2
+RESULT scenario=h1-plain inflight=64 conns=64 ops=27125 p50=520 p90=1490 p99=40000 p999=40000 errors=0 
+## tls h1-plain 256 256 5 15 2
+RESULT scenario=h1-plain inflight=256 conns=256 ops=32354 p50=3430 p90=6450 p99=40000 p999=40000 errors=0 
+## tls h1-echo1k 64 64 5 15 2
+RESULT scenario=h1-echo1k inflight=64 conns=64 ops=28385 p50=690 p90=2250 p99=40000 p999=40000 errors=0 
+## tls h2-plain 64 2 5 15 2
+RESULT scenario=h2-plain inflight=64 conns=2 ops=34710 p50=780 p90=1160 p99=40000 p999=40000 errors=0 
+## tls h2-echo1k 64 2 5 15 2
+RESULT scenario=h2-echo1k inflight=64 conns=2 ops=11857 p50=2610 p90=3360 p99=40000 p999=40000 errors=0 
+## tls h1-close-plain 16 16 5 15 2
+RESULT scenario=h1-close-plain inflight=16 conns=16 ops=318 p50=37090 p90=40000 p99=40000 p999=40000 errors=0 
+DONE

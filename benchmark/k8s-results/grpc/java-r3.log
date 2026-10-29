@@ -1,0 +1,9 @@
+## grpc-16 16 2 5 15 2
+RESULT scenario=grpc-16 inflight=16 conns=2 ops=23275 p50=190 p90=400 p99=1240 p999=40000 errors=0 
+## grpc-16 64 2 5 15 2
+RESULT scenario=grpc-16 inflight=64 conns=2 ops=46876 p50=640 p90=1010 p99=40000 p999=40000 errors=0 
+## grpc-16 256 4 5 15 2
+RESULT scenario=grpc-16 inflight=256 conns=4 ops=43080 p50=3060 p90=12730 p99=40000 p999=40000 errors=0 
+## grpc-4k 64 2 5 15 2
+RESULT scenario=grpc-4k inflight=64 conns=2 ops=23652 p50=1690 p90=9760 p99=12410 p999=18530 errors=0 
+DONE

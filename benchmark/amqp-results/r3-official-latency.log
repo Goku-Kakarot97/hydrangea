@@ -1,0 +1,4 @@
+SLF4J(W): No SLF4J providers were found.
+SLF4J(W): Defaulting to no-operation (NOP) logger implementation
+SLF4J(W): See https://www.slf4j.org/codes.html#noProviders for further details.
+RESULT scenario=latency lib=official p50_us=354 p90_us=461 p99_us=1711 p999_us=7014 max_us=36732 samples=20000

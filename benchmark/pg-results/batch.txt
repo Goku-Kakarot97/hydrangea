@@ -1,0 +1,19 @@
+RESULT way=hydrangea-batch rows=200000 chunk=1000 seconds=0.851 rows_per_s=234953 cpu_seconds=0.171 cpu_us_per_row=0.9
+RESULT way=hydrangea-pipelined rows=200000 chunk=1000 seconds=4.392 rows_per_s=45540 cpu_seconds=1.232 cpu_us_per_row=6.2
+RESULT way=hydrangea-copy rows=200000 chunk=1000 seconds=0.097 rows_per_s=2062725 cpu_seconds=0.010 cpu_us_per_row=0.0
+RESULT way=pgjdbc-batch rows=200000 chunk=1000 seconds=1.397 rows_per_s=143202 cpu_seconds=0.209 cpu_us_per_row=1.0
+RESULT way=pgjdbc-rewrite rows=200000 chunk=1000 seconds=0.395 rows_per_s=505866 cpu_seconds=0.146 cpu_us_per_row=0.7
+RESULT way=pgjdbc-copy rows=200000 chunk=1000 seconds=0.087 rows_per_s=2300426 cpu_seconds=0.005 cpu_us_per_row=0.0
+RESULT way=hydrangea-copy rows=200000 chunk=1000 seconds=0.106 rows_per_s=1891661 cpu_seconds=0.013 cpu_us_per_row=0.1
+RESULT way=pgjdbc-batch rows=200000 chunk=1000 seconds=1.640 rows_per_s=121978 cpu_seconds=0.235 cpu_us_per_row=1.2
+RESULT way=pgjdbc-rewrite rows=200000 chunk=1000 seconds=0.509 rows_per_s=393265 cpu_seconds=0.180 cpu_us_per_row=0.9
+RESULT way=pgjdbc-copy rows=200000 chunk=1000 seconds=0.086 rows_per_s=2335226 cpu_seconds=0.004 cpu_us_per_row=0.0
+RESULT way=hydrangea-batch rows=200000 chunk=1000 seconds=0.863 rows_per_s=231858 cpu_seconds=0.178 cpu_us_per_row=0.9
+RESULT way=hydrangea-pipelined rows=200000 chunk=1000 seconds=4.445 rows_per_s=44990 cpu_seconds=1.230 cpu_us_per_row=6.1
+RESULT way=pgjdbc-rewrite rows=200000 chunk=1000 seconds=0.405 rows_per_s=493980 cpu_seconds=0.146 cpu_us_per_row=0.7
+RESULT way=pgjdbc-copy rows=200000 chunk=1000 seconds=0.066 rows_per_s=3049088 cpu_seconds=0.005 cpu_us_per_row=0.0
+RESULT way=hydrangea-batch rows=200000 chunk=1000 seconds=0.838 rows_per_s=238695 cpu_seconds=0.176 cpu_us_per_row=0.9
+RESULT way=hydrangea-pipelined rows=200000 chunk=1000 seconds=4.529 rows_per_s=44161 cpu_seconds=1.314 cpu_us_per_row=6.6
+RESULT way=hydrangea-copy rows=200000 chunk=1000 seconds=0.098 rows_per_s=2031085 cpu_seconds=0.008 cpu_us_per_row=0.0
+RESULT way=pgjdbc-batch rows=200000 chunk=1000 seconds=1.417 rows_per_s=141131 cpu_seconds=0.201 cpu_us_per_row=1.0
+done

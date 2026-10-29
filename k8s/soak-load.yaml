@@ -1,0 +1,26 @@
+# One run of benchmark/src/h2/SoakLoad.java against the soak server; the minutes are the last argument.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hydrangea-soak-load
+  labels: {app.kubernetes.io/part-of: hydrangea-bench}
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 6000
+  ttlSecondsAfterFinished: 7200
+  template:
+    metadata:
+      labels: {app.kubernetes.io/part-of: hydrangea-bench, app: hydrangea-soak-load}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: load
+          image: eclipse-temurin:21-jre
+          command: ["java", "-Xmx384m", "-cp", "/jars/hydrangea.jar:/jars/bench.jar", "h2.SoakLoad", "hydrangea-soak-server.iris.svc.cluster.local", "8080", "60"]
+          resources:
+            requests: {cpu: "1", memory: 512Mi}
+            limits: {cpu: "2", memory: 640Mi}
+          volumeMounts: [{name: jars, mountPath: /jars}]
+      volumes:
+        - name: jars
+          configMap: {name: hydrangea-soak-jars}

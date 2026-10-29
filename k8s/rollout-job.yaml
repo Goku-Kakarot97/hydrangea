@@ -1,0 +1,34 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hydrangea-rollout
+  labels: {app.kubernetes.io/part-of: hydrangea-bench}
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels: {app.kubernetes.io/part-of: hydrangea-bench, app: hydrangea-rollout}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: load
+          image: eclipse-temurin:21-jre
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              H=hydrangea-server.iris.svc.cluster.local
+              L() { echo "## $*"; java -Xmx384m -cp /jars/hydrangea.jar:/jars/bench.jar bench.HttpLoad "$@" 2>&1 | grep -E "RESULT|ERROR-KIND"; }
+              # mode port conns threads warmup duration opts
+              L http 8080 64 2 0 70 host=$H "path=/users/%d?q=roll" think=2 reconnect=true &
+              L ws 8080 50 1 0 70 host=$H size=100 think=20 reconnect=true &
+              L http 8080 4 1 0 70 host=$H method=POST path=/sink body=4194304 verify=false think=100 reconnect=true &
+              wait
+              echo DONE
+          resources:
+            requests: {cpu: "1", memory: 512Mi}
+            limits: {cpu: "2", memory: 640Mi}
+          volumeMounts: [{name: jars, mountPath: /jars}]
+      volumes:
+        - name: jars
+          configMap: {name: hydrangea-jars}

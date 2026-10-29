@@ -1,0 +1,8 @@
+t= 30s heap=   3 MB threads= 18 sessions=10 ops=41709 unexpected=0
+t= 60s heap=   3 MB threads= 18 sessions= 9 ops=68629 unexpected=0
+t= 90s heap=   3 MB threads= 18 sessions=16 ops=90538 unexpected=0
+t=120s heap=   3 MB threads= 18 sessions=12 ops=110716 unexpected=0
+operations: {array=5458, batch=11075, copy=7829, insert=16674, query=44168, stream=8668, timeout=7841, tx=9035}
+stray cancels that reached a COPY, a stream or a transaction: 505
+unexpected: none
+RESULT seconds=120 workers=32 conns=8 cache=64 distinct=300 ops=110748 ops_per_s=922 heap_first_third_mb=3 heap_last_third_mb=3 max_prepared_on_a_connection=64 stray_cancels=505 unexpected=0

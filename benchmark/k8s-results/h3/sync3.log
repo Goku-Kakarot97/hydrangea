@@ -1,0 +1,3 @@
+RESULT procs=4 conns=4 window=8 secs=30 requests=325663 rps=10855
+RESULT procs=4 conns=4 window=8 secs=30 requests=199270 rps=6642
+RESULT procs=4 conns=4 window=8 secs=30 requests=198900 rps=6630

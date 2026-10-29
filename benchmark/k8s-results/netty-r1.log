@@ -1,0 +1,17 @@
+## http 8080 64 3 3 10 host=bench-netty.iris.svc.cluster.local path=/plain
+RESULT ops=174454 mbps=2.3 p50=300 p90=553 p99=1412 p999=5257 max=16939 errors=0 connected=64
+## http 8080 1000 3 3 10 host=bench-netty.iris.svc.cluster.local path=/plain
+RESULT ops=142396 mbps=1.9 p50=6555 p90=10048 p99=16794 p999=25080 max=44395 errors=0 connected=1000
+## http 8080 64 3 3 10 host=bench-netty.iris.svc.cluster.local path=/json
+RESULT ops=0 mbps=0.0 p50=0 p90=0 p99=0 p999=0 max=0 errors=0 connected=64
+## http 8080 64 3 3 10 host=bench-netty.iris.svc.cluster.local path=/users/%d?q=hello
+RESULT ops=165067 mbps=2.9 p50=295 p90=583 p99=1982 p999=6749 max=16668 errors=0 connected=64
+## http 8080 64 3 3 10 host=bench-netty.iris.svc.cluster.local method=POST path=/echo body=1024
+RESULT ops=136815 mbps=140.1 p50=395 p90=690 p99=1682 p999=5876 max=21017 errors=0 connected=64
+## http 8080 8 3 3 10 host=bench-netty.iris.svc.cluster.local path=/download/1048576 verify=false
+RESULT ops=3433 mbps=3599.5 p50=1974 p90=3586 p99=6183 p999=15545 max=24893 errors=0 connected=8
+## ws 8080 64 3 3 10 host=bench-netty.iris.svc.cluster.local size=64
+RESULT ops=178508 mbps=11.4 p50=304 p90=535 p99=1140 p999=4695 max=17703 errors=0 connected=64
+## ws 8080 1000 3 3 10 host=bench-netty.iris.svc.cluster.local size=64
+RESULT ops=122180 mbps=7.8 p50=7763 p90=11148 p99=19612 p999=32795 max=51922 errors=0 connected=1000
+DONE

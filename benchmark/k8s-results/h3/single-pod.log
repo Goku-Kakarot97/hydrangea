@@ -1,0 +1,6 @@
+[notice] To update, run: pip install --upgrade pip
+RESULT procs=1 conns=1 window=1 secs=10 requests=28141 rps=2814
+RESULT procs=2 conns=2 window=8 secs=20 requests=144414 rps=7220
+RESULT procs=4 conns=4 window=8 secs=20 requests=237225 rps=11861
+RESULT procs=6 conns=4 window=8 secs=20 requests=238014 rps=11900
+DONE

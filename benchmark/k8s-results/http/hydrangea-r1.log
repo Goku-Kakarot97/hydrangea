@@ -1,0 +1,15 @@
+## http/1.1 16 2 5 15 path=/plain
+RESULT ops=47110 mbps=0.6 p50=147 p90=256 p99=510 p999=51304 max=56927 errors=0 connected=16
+## http/1.1 64 2 5 15 path=/plain
+RESULT ops=52518 mbps=0.7 p50=569 p90=780 p99=48769 p999=53236 max=70810 errors=0 connected=64
+## http/1.1 256 2 5 15 path=/plain
+RESULT ops=41778 mbps=0.5 p50=2853 p90=4704 p99=56001 p999=57510 max=77508 errors=0 connected=256
+## http/1.1 64 2 5 15 method=POST path=/echo body=1024
+RESULT ops=43180 mbps=44.2 p50=682 p90=1004 p99=49127 p999=53459 max=74072 errors=0 connected=64
+## h2c h2-plain 64 2 5 15 2
+RESULT scenario=h2-plain inflight=64 conns=2 ops=150262 p50=220 p90=440 p99=850 p999=40000 errors=0 
+## h2c h2-plain 256 4 5 15 2
+RESULT scenario=h2-plain inflight=256 conns=4 ops=155184 p50=790 p90=1250 p99=40000 p999=40000 errors=0 
+## h2c h2-echo1k 64 2 5 15 2
+RESULT scenario=h2-echo1k inflight=64 conns=2 ops=102568 p50=340 p90=600 p99=1310 p999=40000 errors=0 
+DONE

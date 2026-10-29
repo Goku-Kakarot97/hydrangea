@@ -1,0 +1,1 @@
+RESULT scenario=latency lib=hydrangea qos=1 p50_us=69 p90_us=78 p99_us=111 p999_us=217 max_us=3378 samples=20000

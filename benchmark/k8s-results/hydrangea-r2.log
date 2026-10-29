@@ -1,0 +1,17 @@
+## http 8080 64 3 3 10 host=bench-hydrangea.iris.svc.cluster.local path=/plain
+RESULT ops=161895 mbps=2.1 p50=324 p90=597 p99=1800 p999=6528 max=20379 errors=0 connected=64
+## http 8080 1000 3 3 10 host=bench-hydrangea.iris.svc.cluster.local path=/plain
+RESULT ops=142443 mbps=1.9 p50=6351 p90=10833 p99=18492 p999=32462 max=56647 errors=0 connected=1000
+## http 8080 64 3 3 10 host=bench-hydrangea.iris.svc.cluster.local path=/json
+RESULT ops=188788 mbps=28.5 p50=272 p90=494 p99=1474 p999=6001 max=19817 errors=0 connected=64
+## http 8080 64 3 3 10 host=bench-hydrangea.iris.svc.cluster.local path=/users/%d?q=hello
+RESULT ops=164351 mbps=2.9 p50=299 p90=589 p99=2123 p999=6783 max=21634 errors=0 connected=64
+## http 8080 64 3 3 10 host=bench-hydrangea.iris.svc.cluster.local method=POST path=/echo body=1024
+RESULT ops=146474 mbps=150.0 p50=352 p90=652 p99=1838 p999=7200 max=19607 errors=0 connected=64
+## http 8080 8 3 3 10 host=bench-hydrangea.iris.svc.cluster.local path=/download/1048576 verify=false
+RESULT ops=3508 mbps=3678.8 p50=1800 p90=3497 p99=6462 p999=13889 max=19343 errors=0 connected=8
+## ws 8080 64 3 3 10 host=bench-hydrangea.iris.svc.cluster.local size=64
+RESULT ops=167318 mbps=10.7 p50=332 p90=522 p99=1295 p999=5299 max=19451 errors=0 connected=64
+## ws 8080 1000 3 3 10 host=bench-hydrangea.iris.svc.cluster.local size=64
+RESULT ops=126865 mbps=8.1 p50=7429 p90=9870 p99=18569 p999=28601 max=51239 errors=0 connected=1000
+DONE

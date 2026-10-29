@@ -1,0 +1,65 @@
+# A load Job for the PostgreSQL client comparison (Hydrangea against pgjdbc + HikariCP), run by benchmark/run-k8s-pg.sh, which fills in the __PLACEHOLDERS__.
+# The database login comes from the Secret hydrangea-pg-db (PGHOST PGPORT PGUSER PGPASSWORD PGDB), never from this file. The jars come from the ConfigMaps hydrangea-pg-jars and
+# hydrangea-pg-pgjdbc-a/-b (pgjdbc is over the 1 MiB limit of one ConfigMap, so it is in two halves that the container joins).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: __NAME__
+  namespace: __NAMESPACE__
+  labels: {app.kubernetes.io/part-of: hydrangea-bench}
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: __DEADLINE__
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels: {app.kubernetes.io/part-of: hydrangea-bench, app: hydrangea-pg-load}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: load
+          image: eclipse-temurin:21-jre
+          envFrom: [{secretRef: {name: hydrangea-pg-db}}]
+          env:
+            - {name: SCENARIOS, value: "__SCENARIOS__"}
+            - {name: CONFIGS, value: "__CONFIGS__"}
+            - {name: ROUNDS, value: "__ROUNDS__"}
+            - {name: SECS, value: "__SECS__"}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              cat /pgjdbc-a/part-aa /pgjdbc-b/part-ab > /tmp/pgjdbc.jar
+              CP=/jars/hydrangea.jar:/jars/bench.jar:/jars/HikariCP.jar:/jars/slf4j.jar:/tmp/pgjdbc.jar
+              run() { java -Xmx512m -cp $CP postgres.PgBench "$@" host=$PGHOST port=$PGPORT user=$PGUSER password=$PGPASSWORD db=$PGDB 2>&1 | grep -E '^RESULT' || echo "FAILED $1 $2"; }
+              LIBS="hydrangea hydrangea-block pgjdbc pgjdbc-virtual pgjdbc-dedicated"
+              echo "## pod $(hostname), $(nproc) cpus visible, $(uname -m)"
+              r=1
+              while [ $r -le $ROUNDS ]; do
+                for cfg in $CONFIGS; do
+                  conns=${cfg%%:*}; callers=${cfg##*:}
+                  for sc in $SCENARIOS; do
+                    # rotate the order every round so that no library always runs first or last
+                    set -- $LIBS; n=$#; k=$(( (r - 1 + ${#sc}) % n )); order=""; i=0
+                    for l in "$@"; do if [ $i -ge $k ]; then order="$order $l"; fi; i=$((i+1)); done
+                    i=0; for l in "$@"; do if [ $i -lt $k ]; then order="$order $l"; fi; i=$((i+1)); done
+                    for lib in $order; do
+                      if [ "$lib" = pgjdbc-dedicated ] && [ "$conns" != "$callers" ]; then continue; fi
+                      echo "## round $r $cfg $sc $lib"
+                      run $lib $sc conns=$conns callers=$callers seconds=$SECS warmup=2
+                    done
+                  done
+                done
+                r=$((r+1))
+              done
+              echo DONE
+          resources:
+            requests: {cpu: "__CPU__", memory: 768Mi}
+            limits: {cpu: "__CPU__", memory: 1Gi}
+          volumeMounts:
+            - {name: jars, mountPath: /jars}
+            - {name: pgjdbc-a, mountPath: /pgjdbc-a}
+            - {name: pgjdbc-b, mountPath: /pgjdbc-b}
+      volumes:
+        - {name: jars, configMap: {name: hydrangea-pg-jars}}
+        - {name: pgjdbc-a, configMap: {name: hydrangea-pg-pgjdbc-a}}
+        - {name: pgjdbc-b, configMap: {name: hydrangea-pg-pgjdbc-b}}

@@ -1,0 +1,1 @@
+RESULT scenario=publish-confirm lib=hydrangea msgs_per_s=2083.8 mb_per_s=136.6 client_cpu_s_per_100k=7.6 issued=26514 confirmed=26514 unconfirmed_at_end=0 in_broker=-1 threads_peak=9 rss_mb=210

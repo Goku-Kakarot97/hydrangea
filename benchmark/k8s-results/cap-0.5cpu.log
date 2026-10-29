@@ -1,0 +1,51 @@
+=== round 1
+## http/1.1 http 8080 16 2 5 15 path=/plain
+RESULT ops=46224 mbps=0.6 p50=146 p90=253 p99=512 p999=51262 max=77199 errors=0 connected=16
+## http/1.1 http 8080 64 2 5 15 path=/plain
+RESULT ops=49979 mbps=0.6 p50=593 p90=854 p99=48904 p999=53259 max=65420 errors=0 connected=64
+## http/1.1 http 8080 256 2 5 15 path=/plain
+RESULT ops=43662 mbps=0.6 p50=2757 p90=4486 p99=55865 p999=62843 max=71426 errors=0 connected=256
+## http/1.1 http 8080 64 2 5 15 method=POST path=/echo body=1024
+RESULT ops=39522 mbps=40.5 p50=743 p90=1129 p99=49256 p999=53698 max=60338 errors=0 connected=64
+## h2-plain 16 2 5 15 2
+RESULT scenario=h2-plain inflight=16 conns=2 ops=96851 p50=80 p90=120 p99=440 p999=40000 errors=0 
+## h2-plain 64 2 5 15 2
+RESULT scenario=h2-plain inflight=64 conns=2 ops=115080 p50=270 p90=470 p99=1110 p999=40000 errors=0 
+## h2-plain 256 4 5 15 2
+RESULT scenario=h2-plain inflight=256 conns=4 ops=121239 p50=1170 p90=1930 p99=40000 p999=40000 errors=0 
+## h2-echo1k 64 2 5 15 2
+RESULT scenario=h2-echo1k inflight=64 conns=2 ops=80025 p50=450 p90=730 p99=2040 p999=40000 errors=0 
+## grpc-16 16 2 5 15 2
+RESULT scenario=grpc-16 inflight=16 conns=2 ops=55631 p50=130 p90=200 p99=550 p999=40000 errors=0 
+## grpc-16 64 2 5 15 2
+RESULT scenario=grpc-16 inflight=64 conns=2 ops=61864 p50=500 p90=780 p99=33280 p999=40000 errors=0 
+## grpc-16 256 4 5 15 2
+RESULT scenario=grpc-16 inflight=256 conns=4 ops=61603 p50=2190 p90=4490 p99=40000 p999=40000 errors=0 
+## grpc-4k 64 2 5 15 2
+RESULT scenario=grpc-4k inflight=64 conns=2 ops=27919 p50=1500 p90=2720 p99=11780 p999=18730 errors=0 
+=== round 2
+## http/1.1 http 8080 16 2 5 15 path=/plain
+RESULT ops=47566 mbps=0.6 p50=145 p90=258 p99=500 p999=50593 max=56658 errors=0 connected=16
+## http/1.1 http 8080 64 2 5 15 path=/plain
+RESULT ops=49001 mbps=0.6 p50=601 p90=871 p99=48982 p999=53338 max=56560 errors=0 connected=64
+## http/1.1 http 8080 256 2 5 15 path=/plain
+RESULT ops=41649 mbps=0.5 p50=2902 p90=4616 p99=56129 p999=59872 max=69356 errors=0 connected=256
+## http/1.1 http 8080 64 2 5 15 method=POST path=/echo body=1024
+RESULT ops=40280 mbps=41.2 p50=730 p90=1088 p99=49260 p999=53563 max=69628 errors=0 connected=64
+## h2-plain 16 2 5 15 2
+RESULT scenario=h2-plain inflight=16 conns=2 ops=92956 p50=90 p90=130 p99=470 p999=40000 errors=0 
+## h2-plain 64 2 5 15 2
+RESULT scenario=h2-plain inflight=64 conns=2 ops=115698 p50=280 p90=490 p99=1110 p999=40000 errors=0 
+## h2-plain 256 4 5 15 2
+RESULT scenario=h2-plain inflight=256 conns=4 ops=127279 p50=960 p90=1450 p99=40000 p999=40000 errors=0 
+## h2-echo1k 64 2 5 15 2
+RESULT scenario=h2-echo1k inflight=64 conns=2 ops=82362 p50=420 p90=720 p99=1840 p999=40000 errors=0 
+## grpc-16 16 2 5 15 2
+RESULT scenario=grpc-16 inflight=16 conns=2 ops=56176 p50=130 p90=200 p99=570 p999=40000 errors=0 
+## grpc-16 64 2 5 15 2
+RESULT scenario=grpc-16 inflight=64 conns=2 ops=63054 p50=500 p90=770 p99=20370 p999=40000 errors=0 
+## grpc-16 256 4 5 15 2
+RESULT scenario=grpc-16 inflight=256 conns=4 ops=64629 p50=2150 p90=4630 p99=40000 p999=40000 errors=0 
+## grpc-4k 64 2 5 15 2
+RESULT scenario=grpc-4k inflight=64 conns=2 ops=27307 p50=1530 p90=2910 p99=11850 p999=15090 errors=0 
+DONE

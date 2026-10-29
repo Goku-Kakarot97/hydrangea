@@ -1,0 +1,254 @@
+## pod hydrangea-pg-load-7gvs8, 2 cpus visible, x86_64
+## round 1 8:8 select1 pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=select1 conns=8 callers=8 qps=57269 err=0 p50_us=110 p99_us=507 cpu_us_per_query=27.3 threads_peak=17 rss_mb=88
+## round 1 8:8 select1 pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=select1 conns=8 callers=8 qps=50753 err=0 p50_us=126 p99_us=589 cpu_us_per_query=36.2 threads_peak=16 rss_mb=96
+## round 1 8:8 select1 pgjdbc-dedicated
+RESULT binary=on tls=off lib=pgjdbc-dedicated scenario=select1 conns=8 callers=8 qps=62749 err=0 p50_us=110 p99_us=425 cpu_us_per_query=21.6 threads_peak=15 rss_mb=90
+## round 1 8:8 select1 hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=select1 conns=8 callers=8 qps=69648 err=0 p50_us=102 p99_us=294 cpu_us_per_query=18.1 threads_peak=12 rss_mb=70
+## round 1 8:8 select1 hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=select1 conns=8 callers=8 qps=58569 err=0 p50_us=118 p99_us=376 cpu_us_per_query=28.0 threads_peak=20 rss_mb=66
+## round 1 8:8 calc pgjdbc-dedicated
+RESULT binary=on tls=off lib=pgjdbc-dedicated scenario=calc conns=8 callers=8 qps=60445 err=0 p50_us=114 p99_us=425 cpu_us_per_query=24.1 threads_peak=15 rss_mb=89
+## round 1 8:8 calc hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=calc conns=8 callers=8 qps=65697 err=0 p50_us=106 p99_us=327 cpu_us_per_query=18.2 threads_peak=12 rss_mb=71
+## round 1 8:8 calc hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=calc conns=8 callers=8 qps=57398 err=0 p50_us=122 p99_us=409 cpu_us_per_query=29.2 threads_peak=20 rss_mb=74
+## round 1 8:8 calc pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=calc conns=8 callers=8 qps=55336 err=0 p50_us=114 p99_us=491 cpu_us_per_query=27.8 threads_peak=17 rss_mb=91
+## round 1 8:8 calc pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=calc conns=8 callers=8 qps=42118 err=0 p50_us=139 p99_us=655 cpu_us_per_query=42.3 threads_peak=16 rss_mb=98
+## round 1 8:8 series hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=series conns=8 callers=8 qps=29892 err=0 p50_us=229 p99_us=688 cpu_us_per_query=51.2 threads_peak=20 rss_mb=64
+## round 1 8:8 series pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=series conns=8 callers=8 qps=25529 err=0 p50_us=221 p99_us=917 cpu_us_per_query=66.8 threads_peak=17 rss_mb=91
+## round 1 8:8 series pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=series conns=8 callers=8 qps=24829 err=0 p50_us=245 p99_us=983 cpu_us_per_query=69.3 threads_peak=16 rss_mb=97
+## round 1 8:8 series pgjdbc-dedicated
+RESULT binary=on tls=off lib=pgjdbc-dedicated scenario=series conns=8 callers=8 qps=27323 err=0 p50_us=229 p99_us=786 cpu_us_per_query=58.2 threads_peak=15 rss_mb=97
+## round 1 8:8 series hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=series conns=8 callers=8 qps=33497 err=0 p50_us=212 p99_us=557 cpu_us_per_query=40.7 threads_peak=12 rss_mb=63
+## round 1 8:64 select1 pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=select1 conns=8 callers=64 qps=27033 err=0 p50_us=155 p99_us=79691 cpu_us_per_query=73.9 threads_peak=73 rss_mb=100
+## round 1 8:64 select1 pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=select1 conns=8 callers=64 qps=39353 err=0 p50_us=147 p99_us=950 cpu_us_per_query=49.3 threads_peak=16 rss_mb=95
+## round 1 8:64 select1 hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=select1 conns=8 callers=64 qps=180033 err=0 p50_us=229 p99_us=1179 cpu_us_per_query=10.9 threads_peak=12 rss_mb=69
+## round 1 8:64 select1 hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=select1 conns=8 callers=64 qps=110595 err=0 p50_us=294 p99_us=2359 cpu_us_per_query=18.0 threads_peak=76 rss_mb=75
+## round 1 8:64 calc hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=calc conns=8 callers=64 qps=161872 err=0 p50_us=245 p99_us=1245 cpu_us_per_query=12.3 threads_peak=12 rss_mb=64
+## round 1 8:64 calc hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=calc conns=8 callers=64 qps=99100 err=0 p50_us=311 p99_us=3276 cpu_us_per_query=20.1 threads_peak=76 rss_mb=66
+## round 1 8:64 calc pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=calc conns=8 callers=64 qps=29446 err=0 p50_us=147 p99_us=71303 cpu_us_per_query=67.9 threads_peak=73 rss_mb=98
+## round 1 8:64 calc pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=calc conns=8 callers=64 qps=37187 err=0 p50_us=147 p99_us=1179 cpu_us_per_query=52.5 threads_peak=16 rss_mb=95
+## round 1 8:64 series hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=series conns=8 callers=64 qps=47825 err=0 p50_us=720 p99_us=16777 cpu_us_per_query=41.6 threads_peak=76 rss_mb=66
+## round 1 8:64 series pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=series conns=8 callers=64 qps=15191 err=0 p50_us=278 p99_us=134217 cpu_us_per_query=130.9 threads_peak=73 rss_mb=100
+## round 1 8:64 series pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=series conns=8 callers=64 qps=20897 err=0 p50_us=262 p99_us=2621 cpu_us_per_query=92.0 threads_peak=16 rss_mb=100
+## round 1 8:64 series hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=series conns=8 callers=64 qps=59370 err=0 p50_us=557 p99_us=5505 cpu_us_per_query=32.8 threads_peak=12 rss_mb=72
+## round 1 32:32 select1 pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=select1 conns=32 callers=32 qps=24586 err=0 p50_us=360 p99_us=44040 cpu_us_per_query=81.3 threads_peak=41 rss_mb=106
+## round 1 32:32 select1 pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=select1 conns=32 callers=32 qps=49020 err=0 p50_us=425 p99_us=2031 cpu_us_per_query=40.1 threads_peak=16 rss_mb=98
+## round 1 32:32 select1 pgjdbc-dedicated
+RESULT binary=on tls=off lib=pgjdbc-dedicated scenario=select1 conns=32 callers=32 qps=35730 err=0 p50_us=393 p99_us=6815 cpu_us_per_query=56.0 threads_peak=39 rss_mb=106
+## round 1 32:32 select1 hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=select1 conns=32 callers=32 qps=99769 err=0 p50_us=172 p99_us=917 cpu_us_per_query=19.9 threads_peak=12 rss_mb=69
+## round 1 32:32 select1 hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=select1 conns=32 callers=32 qps=73005 err=0 p50_us=212 p99_us=1245 cpu_us_per_query=27.3 threads_peak=44 rss_mb=70
+## round 1 32:32 calc pgjdbc-dedicated
+RESULT binary=on tls=off lib=pgjdbc-dedicated scenario=calc conns=32 callers=32 qps=31234 err=0 p50_us=458 p99_us=29360 cpu_us_per_query=64.0 threads_peak=39 rss_mb=104
+## round 1 32:32 calc hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=calc conns=32 callers=32 qps=95713 err=0 p50_us=180 p99_us=1048 cpu_us_per_query=20.9 threads_peak=12 rss_mb=70
+## round 1 32:32 calc hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=calc conns=32 callers=32 qps=71580 err=0 p50_us=221 p99_us=1638 cpu_us_per_query=28.0 threads_peak=44 rss_mb=76
+## round 1 32:32 calc pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=calc conns=32 callers=32 qps=25029 err=0 p50_us=311 p99_us=44040 cpu_us_per_query=79.9 threads_peak=41 rss_mb=105
+## round 1 32:32 calc pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=calc conns=32 callers=32 qps=51588 err=0 p50_us=425 p99_us=1966 cpu_us_per_query=38.0 threads_peak=16 rss_mb=99
+## round 1 32:32 series hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=series conns=32 callers=32 qps=36449 err=0 p50_us=589 p99_us=5505 cpu_us_per_query=54.7 threads_peak=44 rss_mb=74
+## round 1 32:32 series pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=series conns=32 callers=32 qps=8503 err=0 p50_us=851 p99_us=54525 cpu_us_per_query=234.7 threads_peak=41 rss_mb=96
+## round 1 32:32 series pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=series conns=32 callers=32 qps=25047 err=0 p50_us=917 p99_us=5767 cpu_us_per_query=75.9 threads_peak=16 rss_mb=99
+## round 1 32:32 series pgjdbc-dedicated
+RESULT binary=on tls=off lib=pgjdbc-dedicated scenario=series conns=32 callers=32 qps=26629 err=0 p50_us=557 p99_us=19922 cpu_us_per_query=74.9 threads_peak=39 rss_mb=97
+## round 1 32:32 series hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=series conns=32 callers=32 qps=46767 err=0 p50_us=557 p99_us=2883 cpu_us_per_query=42.0 threads_peak=12 rss_mb=70
+## round 2 8:8 select1 pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=select1 conns=8 callers=8 qps=47710 err=0 p50_us=131 p99_us=622 cpu_us_per_query=37.1 threads_peak=16 rss_mb=92
+## round 2 8:8 select1 pgjdbc-dedicated
+RESULT binary=on tls=off lib=pgjdbc-dedicated scenario=select1 conns=8 callers=8 qps=62203 err=0 p50_us=110 p99_us=442 cpu_us_per_query=23.1 threads_peak=15 rss_mb=84
+## round 2 8:8 select1 hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=select1 conns=8 callers=8 qps=70566 err=0 p50_us=98 p99_us=278 cpu_us_per_query=17.2 threads_peak=12 rss_mb=69
+## round 2 8:8 select1 hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=select1 conns=8 callers=8 qps=58752 err=0 p50_us=118 p99_us=344 cpu_us_per_query=29.1 threads_peak=20 rss_mb=63
+## round 2 8:8 select1 pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=select1 conns=8 callers=8 qps=54793 err=0 p50_us=114 p99_us=507 cpu_us_per_query=27.9 threads_peak=17 rss_mb=93
+## round 2 8:8 calc hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=calc conns=8 callers=8 qps=65299 err=0 p50_us=106 p99_us=360 cpu_us_per_query=17.6 threads_peak=12 rss_mb=66
+## round 2 8:8 calc hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=calc conns=8 callers=8 qps=55353 err=0 p50_us=122 p99_us=458 cpu_us_per_query=29.3 threads_peak=20 rss_mb=70
+## round 2 8:8 calc pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=calc conns=8 callers=8 qps=55506 err=0 p50_us=114 p99_us=507 cpu_us_per_query=29.0 threads_peak=17 rss_mb=91
+## round 2 8:8 calc pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=calc conns=8 callers=8 qps=46343 err=0 p50_us=131 p99_us=655 cpu_us_per_query=37.3 threads_peak=16 rss_mb=94
+## round 2 8:8 calc pgjdbc-dedicated
+RESULT binary=on tls=off lib=pgjdbc-dedicated scenario=calc conns=8 callers=8 qps=60073 err=0 p50_us=110 p99_us=458 cpu_us_per_query=23.7 threads_peak=15 rss_mb=90
+## round 2 8:8 series pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=series conns=8 callers=8 qps=21155 err=0 p50_us=237 p99_us=1114 cpu_us_per_query=87.9 threads_peak=17 rss_mb=97
+## round 2 8:8 series pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=series conns=8 callers=8 qps=25534 err=0 p50_us=245 p99_us=851 cpu_us_per_query=69.0 threads_peak=16 rss_mb=95
+## round 2 8:8 series pgjdbc-dedicated
+RESULT binary=on tls=off lib=pgjdbc-dedicated scenario=series conns=8 callers=8 qps=29632 err=0 p50_us=221 p99_us=753 cpu_us_per_query=51.2 threads_peak=15 rss_mb=87
+## round 2 8:8 series hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=series conns=8 callers=8 qps=33754 err=0 p50_us=204 p99_us=557 cpu_us_per_query=40.3 threads_peak=12 rss_mb=64
+## round 2 8:8 series hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=series conns=8 callers=8 qps=30090 err=0 p50_us=229 p99_us=688 cpu_us_per_query=51.4 threads_peak=20 rss_mb=63
+## round 2 8:64 select1 pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=select1 conns=8 callers=64 qps=41884 err=0 p50_us=139 p99_us=917 cpu_us_per_query=46.9 threads_peak=16 rss_mb=93
+## round 2 8:64 select1 hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=select1 conns=8 callers=64 qps=176567 err=0 p50_us=221 p99_us=1114 cpu_us_per_query=11.3 threads_peak=12 rss_mb=61
+## round 2 8:64 select1 hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=select1 conns=8 callers=64 qps=109781 err=0 p50_us=294 p99_us=2752 cpu_us_per_query=18.2 threads_peak=76 rss_mb=72
+## round 2 8:64 select1 pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=select1 conns=8 callers=64 qps=30531 err=0 p50_us=139 p99_us=71303 cpu_us_per_query=65.5 threads_peak=73 rss_mb=96
+## round 2 8:64 calc hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=calc conns=8 callers=64 qps=161877 err=0 p50_us=253 p99_us=1048 cpu_us_per_query=12.2 threads_peak=12 rss_mb=70
+## round 2 8:64 calc hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=calc conns=8 callers=64 qps=100440 err=0 p50_us=311 p99_us=2621 cpu_us_per_query=19.8 threads_peak=76 rss_mb=67
+## round 2 8:64 calc pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=calc conns=8 callers=64 qps=29975 err=0 p50_us=147 p99_us=71303 cpu_us_per_query=66.8 threads_peak=73 rss_mb=97
+## round 2 8:64 calc pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=calc conns=8 callers=64 qps=38114 err=0 p50_us=147 p99_us=1441 cpu_us_per_query=50.6 threads_peak=16 rss_mb=92
+## round 2 8:64 series pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=series conns=8 callers=64 qps=8472 err=0 p50_us=409 p99_us=201326 cpu_us_per_query=236.3 threads_peak=73 rss_mb=100
+## round 2 8:64 series pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=series conns=8 callers=64 qps=22072 err=0 p50_us=262 p99_us=1572 cpu_us_per_query=87.8 threads_peak=16 rss_mb=94
+## round 2 8:64 series hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=series conns=8 callers=64 qps=55260 err=0 p50_us=655 p99_us=8912 cpu_us_per_query=35.9 threads_peak=12 rss_mb=64
+## round 2 8:64 series hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=series conns=8 callers=64 qps=49172 err=0 p50_us=753 p99_us=13631 cpu_us_per_query=40.0 threads_peak=76 rss_mb=65
+## round 2 32:32 select1 pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=select1 conns=32 callers=32 qps=47879 err=0 p50_us=442 p99_us=2228 cpu_us_per_query=41.1 threads_peak=16 rss_mb=96
+## round 2 32:32 select1 pgjdbc-dedicated
+RESULT binary=on tls=off lib=pgjdbc-dedicated scenario=select1 conns=32 callers=32 qps=43715 err=0 p50_us=294 p99_us=3932 cpu_us_per_query=45.7 threads_peak=39 rss_mb=98
+## round 2 32:32 select1 hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=select1 conns=32 callers=32 qps=99908 err=0 p50_us=172 p99_us=1015 cpu_us_per_query=20.0 threads_peak=12 rss_mb=69
+## round 2 32:32 select1 hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=select1 conns=32 callers=32 qps=72649 err=0 p50_us=221 p99_us=1114 cpu_us_per_query=27.4 threads_peak=44 rss_mb=71
+## round 2 32:32 select1 pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=select1 conns=32 callers=32 qps=31224 err=0 p50_us=262 p99_us=35651 cpu_us_per_query=64.1 threads_peak=41 rss_mb=105
+## round 2 32:32 calc hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=calc conns=32 callers=32 qps=95456 err=0 p50_us=180 p99_us=1048 cpu_us_per_query=20.8 threads_peak=12 rss_mb=69
+## round 2 32:32 calc hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=calc conns=32 callers=32 qps=72415 err=0 p50_us=229 p99_us=1769 cpu_us_per_query=27.5 threads_peak=44 rss_mb=71
+## round 2 32:32 calc pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=calc conns=32 callers=32 qps=21396 err=0 p50_us=425 p99_us=46137 cpu_us_per_query=93.5 threads_peak=41 rss_mb=100
+## round 2 32:32 calc pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=calc conns=32 callers=32 qps=49815 err=0 p50_us=425 p99_us=2097 cpu_us_per_query=39.7 threads_peak=16 rss_mb=99
+## round 2 32:32 calc pgjdbc-dedicated
+RESULT binary=on tls=off lib=pgjdbc-dedicated scenario=calc conns=32 callers=32 qps=45262 err=0 p50_us=294 p99_us=4194 cpu_us_per_query=44.0 threads_peak=39 rss_mb=100
+## round 2 32:32 series pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=series conns=32 callers=32 qps=8771 err=0 p50_us=1179 p99_us=52428 cpu_us_per_query=227.6 threads_peak=41 rss_mb=101
+## round 2 32:32 series pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=series conns=32 callers=32 qps=22906 err=0 p50_us=983 p99_us=6029 cpu_us_per_query=82.2 threads_peak=16 rss_mb=98
+## round 2 32:32 series pgjdbc-dedicated
+RESULT binary=on tls=off lib=pgjdbc-dedicated scenario=series conns=32 callers=32 qps=22853 err=0 p50_us=524 p99_us=32505 cpu_us_per_query=87.0 threads_peak=39 rss_mb=103
+## round 2 32:32 series hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=series conns=32 callers=32 qps=45087 err=0 p50_us=557 p99_us=3145 cpu_us_per_query=43.5 threads_peak=12 rss_mb=70
+## round 2 32:32 series hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=series conns=32 callers=32 qps=36888 err=0 p50_us=622 p99_us=5242 cpu_us_per_query=53.9 threads_peak=44 rss_mb=71
+## round 3 8:8 select1 pgjdbc-dedicated
+RESULT binary=on tls=off lib=pgjdbc-dedicated scenario=select1 conns=8 callers=8 qps=60096 err=0 p50_us=110 p99_us=442 cpu_us_per_query=24.2 threads_peak=15 rss_mb=96
+## round 3 8:8 select1 hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=select1 conns=8 callers=8 qps=71725 err=0 p50_us=98 p99_us=262 cpu_us_per_query=17.3 threads_peak=12 rss_mb=58
+## round 3 8:8 select1 hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=select1 conns=8 callers=8 qps=59278 err=0 p50_us=118 p99_us=327 cpu_us_per_query=28.0 threads_peak=20 rss_mb=59
+## round 3 8:8 select1 pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=select1 conns=8 callers=8 qps=55850 err=0 p50_us=114 p99_us=507 cpu_us_per_query=27.3 threads_peak=17 rss_mb=95
+## round 3 8:8 select1 pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=select1 conns=8 callers=8 qps=48256 err=0 p50_us=131 p99_us=622 cpu_us_per_query=37.4 threads_peak=16 rss_mb=94
+## round 3 8:8 calc hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=calc conns=8 callers=8 qps=55697 err=0 p50_us=122 p99_us=409 cpu_us_per_query=30.1 threads_peak=20 rss_mb=71
+## round 3 8:8 calc pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=calc conns=8 callers=8 qps=56685 err=0 p50_us=114 p99_us=491 cpu_us_per_query=27.3 threads_peak=17 rss_mb=93
+## round 3 8:8 calc pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=calc conns=8 callers=8 qps=46751 err=0 p50_us=131 p99_us=622 cpu_us_per_query=38.8 threads_peak=16 rss_mb=94
+## round 3 8:8 calc pgjdbc-dedicated
+RESULT binary=on tls=off lib=pgjdbc-dedicated scenario=calc conns=8 callers=8 qps=60625 err=0 p50_us=114 p99_us=442 cpu_us_per_query=22.0 threads_peak=15 rss_mb=90
+## round 3 8:8 calc hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=calc conns=8 callers=8 qps=67721 err=0 p50_us=102 p99_us=311 cpu_us_per_query=18.5 threads_peak=12 rss_mb=71
+## round 3 8:8 series pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=series conns=8 callers=8 qps=24599 err=0 p50_us=245 p99_us=950 cpu_us_per_query=71.1 threads_peak=16 rss_mb=92
+## round 3 8:8 series pgjdbc-dedicated
+RESULT binary=on tls=off lib=pgjdbc-dedicated scenario=series conns=8 callers=8 qps=29035 err=0 p50_us=221 p99_us=720 cpu_us_per_query=51.8 threads_peak=15 rss_mb=88
+## round 3 8:8 series hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=series conns=8 callers=8 qps=33556 err=0 p50_us=204 p99_us=589 cpu_us_per_query=40.8 threads_peak=12 rss_mb=68
+## round 3 8:8 series hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=series conns=8 callers=8 qps=29656 err=0 p50_us=229 p99_us=688 cpu_us_per_query=52.0 threads_peak=20 rss_mb=70
+## round 3 8:8 series pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=series conns=8 callers=8 qps=27055 err=0 p50_us=229 p99_us=851 cpu_us_per_query=57.1 threads_peak=17 rss_mb=88
+## round 3 8:64 select1 hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=select1 conns=8 callers=64 qps=184257 err=0 p50_us=229 p99_us=950 cpu_us_per_query=10.9 threads_peak=12 rss_mb=64
+## round 3 8:64 select1 hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=select1 conns=8 callers=64 qps=109177 err=0 p50_us=294 p99_us=1966 cpu_us_per_query=18.3 threads_peak=76 rss_mb=74
+## round 3 8:64 select1 pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=select1 conns=8 callers=64 qps=30546 err=0 p50_us=139 p99_us=71303 cpu_us_per_query=65.4 threads_peak=73 rss_mb=98
+## round 3 8:64 select1 pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=select1 conns=8 callers=64 qps=36909 err=0 p50_us=147 p99_us=1245 cpu_us_per_query=52.7 threads_peak=16 rss_mb=96
+## round 3 8:64 calc hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=calc conns=8 callers=64 qps=97031 err=0 p50_us=311 p99_us=3014 cpu_us_per_query=20.6 threads_peak=76 rss_mb=72
+## round 3 8:64 calc pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=calc conns=8 callers=64 qps=27995 err=0 p50_us=147 p99_us=75497 cpu_us_per_query=71.4 threads_peak=73 rss_mb=102
+## round 3 8:64 calc pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=calc conns=8 callers=64 qps=37164 err=0 p50_us=147 p99_us=1114 cpu_us_per_query=53.1 threads_peak=16 rss_mb=97
+## round 3 8:64 calc hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=calc conns=8 callers=64 qps=157409 err=0 p50_us=245 p99_us=1572 cpu_us_per_query=12.6 threads_peak=12 rss_mb=71
+## round 3 8:64 series pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=series conns=8 callers=64 qps=21717 err=0 p50_us=262 p99_us=1769 cpu_us_per_query=87.9 threads_peak=16 rss_mb=96
+## round 3 8:64 series hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=series conns=8 callers=64 qps=55260 err=0 p50_us=655 p99_us=7340 cpu_us_per_query=35.6 threads_peak=12 rss_mb=75
+## round 3 8:64 series hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=series conns=8 callers=64 qps=46783 err=0 p50_us=720 p99_us=20971 cpu_us_per_query=42.1 threads_peak=76 rss_mb=66
+## round 3 8:64 series pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=series conns=8 callers=64 qps=14226 err=0 p50_us=294 p99_us=142606 cpu_us_per_query=140.4 threads_peak=73 rss_mb=100
+## round 3 32:32 select1 pgjdbc-dedicated
+RESULT binary=on tls=off lib=pgjdbc-dedicated scenario=select1 conns=32 callers=32 qps=50508 err=0 p50_us=253 p99_us=3276 cpu_us_per_query=39.6 threads_peak=39 rss_mb=92
+## round 3 32:32 select1 hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=select1 conns=32 callers=32 qps=100225 err=0 p50_us=172 p99_us=1015 cpu_us_per_query=19.9 threads_peak=12 rss_mb=69
+## round 3 32:32 select1 hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=select1 conns=32 callers=32 qps=70418 err=0 p50_us=221 p99_us=1572 cpu_us_per_query=28.4 threads_peak=44 rss_mb=75
+## round 3 32:32 select1 pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=select1 conns=32 callers=32 qps=26036 err=0 p50_us=311 p99_us=44040 cpu_us_per_query=76.7 threads_peak=41 rss_mb=100
+## round 3 32:32 select1 pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=select1 conns=32 callers=32 qps=53813 err=0 p50_us=425 p99_us=1900 cpu_us_per_query=36.5 threads_peak=16 rss_mb=98
+## round 3 32:32 calc hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=calc conns=32 callers=32 qps=70017 err=0 p50_us=229 p99_us=1507 cpu_us_per_query=28.5 threads_peak=44 rss_mb=69
+## round 3 32:32 calc pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=calc conns=32 callers=32 qps=26122 err=0 p50_us=311 p99_us=44040 cpu_us_per_query=76.6 threads_peak=41 rss_mb=102
+## round 3 32:32 calc pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=calc conns=32 callers=32 qps=45447 err=0 p50_us=475 p99_us=2490 cpu_us_per_query=42.7 threads_peak=16 rss_mb=97
+## round 3 32:32 calc pgjdbc-dedicated
+RESULT binary=on tls=off lib=pgjdbc-dedicated scenario=calc conns=32 callers=32 qps=48996 err=0 p50_us=278 p99_us=4063 cpu_us_per_query=40.8 threads_peak=39 rss_mb=108
+## round 3 32:32 calc hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=calc conns=32 callers=32 qps=94010 err=0 p50_us=188 p99_us=917 cpu_us_per_query=21.2 threads_peak=12 rss_mb=76
+## round 3 32:32 series pgjdbc-virtual
+RESULT binary=on tls=off lib=pgjdbc-virtual scenario=series conns=32 callers=32 qps=24789 err=0 p50_us=917 p99_us=4194 cpu_us_per_query=75.4 threads_peak=16 rss_mb=102
+## round 3 32:32 series pgjdbc-dedicated
+RESULT binary=on tls=off lib=pgjdbc-dedicated scenario=series conns=32 callers=32 qps=25667 err=0 p50_us=557 p99_us=20971 cpu_us_per_query=77.5 threads_peak=39 rss_mb=95
+## round 3 32:32 series hydrangea
+RESULT binary=on tls=off lib=hydrangea scenario=series conns=32 callers=32 qps=47326 err=0 p50_us=524 p99_us=3014 cpu_us_per_query=41.9 threads_peak=12 rss_mb=68
+## round 3 32:32 series hydrangea-block
+RESULT binary=on tls=off lib=hydrangea-block scenario=series conns=32 callers=32 qps=37390 err=0 p50_us=589 p99_us=5505 cpu_us_per_query=52.6 threads_peak=44 rss_mb=76
+## round 3 32:32 series pgjdbc
+RESULT binary=on tls=off lib=pgjdbc scenario=series conns=32 callers=32 qps=8312 err=0 p50_us=917 p99_us=58720 cpu_us_per_query=240.4 threads_peak=41 rss_mb=98
+DONE

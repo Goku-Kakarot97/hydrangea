@@ -1,0 +1,52 @@
+=== round 1
+## clear grpc-16
+RESULT scenario=grpc-16 inflight=64 conns=2 ops=47775 p50=410 p90=790 p99=40000 p999=40000 errors=1 io.hydrangea.grpc.StatusException: UNAVAILABLE: Connection refused
+## tls grpc-16
+RESULT scenario=grpc-16 inflight=64 conns=2 ops=50280 p50=760 p90=1170 p99=33270 p999=40000 errors=0 
+## clear grpc-4k
+RESULT scenario=grpc-4k inflight=64 conns=2 ops=23891 p50=1680 p90=9930 p99=12550 p999=15240 errors=0 
+## tls grpc-4k
+RESULT scenario=grpc-4k inflight=64 conns=2 ops=17893 p50=2270 p90=12950 p99=15400 p999=20970 errors=0 
+## clear h2-plain
+RESULT scenario=h2-plain inflight=64 conns=2 ops=146238 p50=220 p90=460 p99=960 p999=40000 errors=0 
+## tls h2-plain
+RESULT scenario=h2-plain inflight=64 conns=2 ops=105229 p50=400 p90=700 p99=1480 p999=30100 errors=0 
+## clear h2-echo1k
+RESULT scenario=h2-echo1k inflight=64 conns=2 ops=96618 p50=350 p90=620 p99=1330 p999=40000 errors=0 
+## tls h2-echo1k
+RESULT scenario=h2-echo1k inflight=64 conns=2 ops=54747 p50=760 p90=1130 p99=22290 p999=39760 errors=0 
+=== round 2
+## tls grpc-16
+RESULT scenario=grpc-16 inflight=64 conns=2 ops=51048 p50=760 p90=1180 p99=31770 p999=40000 errors=0 
+## clear grpc-16
+RESULT scenario=grpc-16 inflight=64 conns=2 ops=80416 p50=390 p90=640 p99=1640 p999=40000 errors=0 
+## tls grpc-4k
+RESULT scenario=grpc-4k inflight=64 conns=2 ops=18219 p50=2250 p90=12680 p99=15460 p999=18480 errors=0 
+## clear grpc-4k
+RESULT scenario=grpc-4k inflight=64 conns=2 ops=23231 p50=1710 p90=10280 p99=12890 p999=16230 errors=0 
+## tls h2-plain
+RESULT scenario=h2-plain inflight=64 conns=2 ops=102914 p50=400 p90=690 p99=1410 p999=31790 errors=0 
+## clear h2-plain
+RESULT scenario=h2-plain inflight=64 conns=2 ops=134447 p50=230 p90=440 p99=900 p999=40000 errors=0 
+## tls h2-echo1k
+RESULT scenario=h2-echo1k inflight=64 conns=2 ops=55455 p50=770 p90=1120 p99=20190 p999=39420 errors=0 
+## clear h2-echo1k
+RESULT scenario=h2-echo1k inflight=64 conns=2 ops=95213 p50=370 p90=670 p99=1520 p999=40000 errors=0 
+=== round 3
+## clear grpc-16
+RESULT scenario=grpc-16 inflight=64 conns=2 ops=78875 p50=400 p90=670 p99=1670 p999=40000 errors=0 
+## tls grpc-16
+RESULT scenario=grpc-16 inflight=64 conns=2 ops=50731 p50=760 p90=1180 p99=33490 p999=40000 errors=0 
+## clear grpc-4k
+RESULT scenario=grpc-4k inflight=64 conns=2 ops=23719 p50=1690 p90=10240 p99=12260 p999=17970 errors=0 
+## tls grpc-4k
+RESULT scenario=grpc-4k inflight=64 conns=2 ops=18408 p50=2220 p90=12400 p99=15060 p999=19670 errors=0 
+## clear h2-plain
+RESULT scenario=h2-plain inflight=64 conns=2 ops=135969 p50=230 p90=450 p99=950 p999=40000 errors=0 
+## tls h2-plain
+RESULT scenario=h2-plain inflight=64 conns=2 ops=100649 p50=400 p90=720 p99=1440 p999=33320 errors=0 
+## clear h2-echo1k
+RESULT scenario=h2-echo1k inflight=64 conns=2 ops=95737 p50=350 p90=610 p99=1470 p999=40000 errors=0 
+## tls h2-echo1k
+RESULT scenario=h2-echo1k inflight=64 conns=2 ops=53829 p50=780 p90=1170 p99=21680 p999=39050 errors=0 
+DONE

@@ -1,0 +1,32 @@
+{"scenario":"base","rep":1,"result":{"mode": "h2", "streams": 10, "rounds": 15, "bytes": 100000, "p50_ms": 69, "p90_ms": 110, "p99_ms": 479, "max_ms": 479, "round_mean_ms": 86, "MBps": 10.45}}
+{"scenario":"base","rep":1,"result":{"mode": "h2", "connect_trials": 12, "p50_ms": 25, "p90_ms": 83, "max_ms": 84}}
+{"scenario":"base","rep":1,"result":{"mode": "h3", "streams": 10, "rounds": 15, "bytes": 100000, "p50_ms": 78, "p90_ms": 123, "p99_ms": 500, "max_ms": 502, "round_mean_ms": 138, "MBps": 4.39}}
+{"scenario":"base","rep":1,"result":{"mode": "h3", "connect_trials": 12, "p50_ms": 106, "p90_ms": 115, "max_ms": 119}}
+{"scenario":"base","rep":2,"result":{"mode": "h3", "streams": 10, "rounds": 15, "bytes": 100000, "p50_ms": 72, "p90_ms": 99, "p99_ms": 118, "max_ms": 120, "round_mean_ms": 104, "MBps": 5.63}}
+{"scenario":"base","rep":2,"result":{"mode": "h3", "connect_trials": 12, "p50_ms": 101, "p90_ms": 112, "max_ms": 160}}
+{"scenario":"base","rep":2,"result":{"mode": "h2", "streams": 10, "rounds": 15, "bytes": 100000, "p50_ms": 6, "p90_ms": 74, "p99_ms": 87, "max_ms": 87, "round_mean_ms": 24, "MBps": 39.09}}
+{"scenario":"base","rep":2,"result":{"mode": "h2", "connect_trials": 12, "p50_ms": 17, "p90_ms": 79, "max_ms": 83}}
+{"scenario":"rtt50","rep":1,"result":}
+{"scenario":"rtt50","rep":1,"result":{"mode": "h2", "connect_trials": 12, "p50_ms": 268, "p90_ms": 273, "max_ms": 284}}
+{"scenario":"rtt50","rep":1,"result":{"mode": "h3", "streams": 10, "rounds": 15, "bytes": 100000, "p50_ms": 96, "p90_ms": 134, "p99_ms": 370, "max_ms": 372, "round_mean_ms": 145, "MBps": 4.58}}
+{"scenario":"rtt50","rep":1,"result":{"mode": "h3", "connect_trials": 12, "p50_ms": 582, "p90_ms": 594, "max_ms": 596}}
+{"scenario":"rtt50","rep":2,"result":{"mode": "h3", "streams": 10, "rounds": 15, "bytes": 100000, "p50_ms": 94, "p90_ms": 125, "p99_ms": 369, "max_ms": 372, "round_mean_ms": 141, "MBps": 4.72}}
+{"scenario":"rtt50","rep":2,"result":{"mode": "h3", "connect_trials": 12, "p50_ms": 580, "p90_ms": 599, "max_ms": 603}}
+{"scenario":"rtt50","rep":2,"result":{"mode": "h2", "streams": 10, "rounds": 15, "bytes": 100000, "p50_ms": 106, "p90_ms": 107, "p99_ms": 354, "max_ms": 354, "round_mean_ms": 120, "MBps": 7.42}}
+{"scenario":"rtt50","rep":2,"result":{"mode": "h2", "connect_trials": 12, "p50_ms": 269, "p90_ms": 271, "max_ms": 279}}
+{"scenario":"loss1","rep":1,"result":{"mode": "h2", "streams": 10, "rounds": 15, "bytes": 100000, "p50_ms": 1522, "p90_ms": 2750, "p99_ms": 3693, "max_ms": 3693, "round_mean_ms": 2182, "MBps": 0.46}}
+{"scenario":"loss1","rep":1,"result":{"mode": "h2", "connect_trials": 12, "p50_ms": 269, "p90_ms": 334, "max_ms": 627}}
+{"scenario":"loss1","rep":1,"result":{"mode": "h3", "streams": 10, "rounds": 15, "bytes": 100000, "p50_ms": 2968, "p90_ms": 4005, "p99_ms": 4814, "max_ms": 4918, "round_mean_ms": 3876, "MBps": 0.25}}
+{"scenario":"loss1","rep":1,"result":{"mode": "h3", "connect_trials": 12, "p50_ms": 681, "p90_ms": 816, "max_ms": 5634}}
+{"scenario":"loss1","rep":2,"result":{"mode": "h3", "streams": 10, "rounds": 15, "bytes": 100000, "p50_ms": 2492, "p90_ms": 3613, "p99_ms": 3994, "max_ms": 4027, "round_mean_ms": 3316, "MBps": 0.3}}
+{"scenario":"loss1","rep":2,"result":{"mode": "h3", "connect_trials": 12, "p50_ms": 680, "p90_ms": 777, "max_ms": 5604}}
+{"scenario":"loss1","rep":2,"result":{"mode": "h2", "streams": 10, "rounds": 15, "bytes": 100000, "p50_ms": 704, "p90_ms": 2270, "p99_ms": 3156, "max_ms": 3156, "round_mean_ms": 1446, "MBps": 0.68}}
+{"scenario":"loss1","rep":2,"result":{"mode": "h2", "connect_trials": 12, "p50_ms": 267, "p90_ms": 283, "max_ms": 316}}
+{"scenario":"loss3","rep":1,"result":{"mode": "h2", "streams": 10, "rounds": 15, "bytes": 100000, "p50_ms": 4219, "p90_ms": 5110, "p99_ms": 5463, "max_ms": 5463, "round_mean_ms": 4607, "MBps": 0.22}}
+{"scenario":"loss3","rep":1,"result":{"mode": "h2", "connect_trials": 12, "p50_ms": 268, "p90_ms": 272, "max_ms": 589}}
+{"scenario":"loss3","rep":1,"result":{"mode": "h3", "streams": 10, "rounds": 15, "bytes": 100000, "p50_ms": 4946, "p90_ms": 6545, "p99_ms": 7090, "max_ms": 7303, "round_mean_ms": 6345, "MBps": 0.15}}
+{"scenario":"loss3","rep":1,"result":{"mode": "h3", "connect_trials": 12, "p50_ms": 680, "p90_ms": 5600, "max_ms": 10696}}
+{"scenario":"loss3","rep":2,"result":{"mode": "h3", "streams": 10, "rounds": 15, "bytes": 100000, "p50_ms": 4853, "p90_ms": 6456, "p99_ms": 7027, "max_ms": 7125, "round_mean_ms": 6257, "MBps": 0.16}}
+{"scenario":"loss3","rep":2,"result":{"mode": "h3", "connect_trials": 12, "p50_ms": 683, "p90_ms": 5701, "max_ms": 5706}}
+{"scenario":"loss3","rep":2,"result":{"mode": "h2", "streams": 10, "rounds": 15, "bytes": 100000, "p50_ms": 4257, "p90_ms": 5215, "p99_ms": 5865, "max_ms": 6286, "round_mean_ms": 4925, "MBps": 0.2}}
+{"scenario":"loss3","rep":2,"result":{"mode": "h2", "connect_trials": 12, "p50_ms": 379, "p90_ms": 5372, "max_ms": 10380}}

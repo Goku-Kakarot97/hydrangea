@@ -1,0 +1,38 @@
+# Several of these started together measure past one pod's CPU: every pod waits for the same wall-clock second (START) and then runs one window.
+# One HTTP/3 load run against bench-h3 with aioquic (benchmark/src/h3/h3_load.py): P processes x C connections x W outstanding requests, closed loop.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: __NAME__
+  labels: {app.kubernetes.io/part-of: hydrangea-bench}
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 900
+  template:
+    metadata:
+      labels: {app.kubernetes.io/part-of: hydrangea-bench, app: __NAME__}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: load
+          image: python:3.12-slim
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              pip install -q --no-cache-dir aioquic 2>&1 | tail -1
+              IP=$(python3 -c "import socket;print(socket.gethostbyname('bench-h3.iris.svc.cluster.local'))")
+              run() { # procs conns window secs
+                for i in $(seq 1 $1); do python3 /load/h3_load.py $IP 4433 $2 $3 $4 > /tmp/o$i 2>/tmp/e$i & done; wait
+                t=0; for i in $(seq 1 $1); do n=$(cat /tmp/o$i); t=$((t+${n:-0})); done
+                echo "RESULT procs=$1 conns=$2 window=$3 secs=$4 requests=$t rps=$((t/$4))"; head -c 300 /tmp/e1
+              }
+              while [ $(date +%s) -lt __START__ ]; do sleep 0.2; done
+              run 4 4 8 30
+              echo DONE
+          resources:
+            requests: {cpu: "1", memory: 1Gi}
+            limits: {cpu: "3", memory: 2Gi}
+          volumeMounts: [{name: load, mountPath: /load}]
+      volumes:
+        - name: load
+          configMap: {name: hydrangea-h3-load}

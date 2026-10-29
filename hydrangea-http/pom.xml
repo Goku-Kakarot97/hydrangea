@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>io.hydrangea</groupId>
+        <groupId>io.github.goku-kakarot97</groupId>
         <artifactId>hydrangea-parent</artifactId>
         <version>1.0.1</version>
     </parent>
@@ -15,17 +15,17 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.hydrangea</groupId>
+            <groupId>io.github.goku-kakarot97</groupId>
             <artifactId>hydrangea-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.hydrangea</groupId>
+            <groupId>io.github.goku-kakarot97</groupId>
             <artifactId>hydrangea-quic</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.hydrangea</groupId>
+            <groupId>io.github.goku-kakarot97</groupId>
             <artifactId>hydrangea-core</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>

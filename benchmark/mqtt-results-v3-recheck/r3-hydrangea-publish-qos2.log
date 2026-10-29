@@ -1,0 +1,1 @@
+RESULT scenario=publish lib=hydrangea qos=2 completed_per_s=169329.4 received_per_s=169325.6 mb_per_s=21.7 client_cpu_s_per_100k=0.6 issued=2188567 received_total=2188567 unfinished_at_end=0 lost=0 threads_peak=15 rss_mb=209
