@@ -1,0 +1,10 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>x</groupId><artifactId>gj</artifactId><version>1</version>
+  <dependencies>
+    <dependency><groupId>io.grpc</groupId><artifactId>grpc-netty-shaded</artifactId><version>1.81.0</version></dependency>
+    <dependency><groupId>io.grpc</groupId><artifactId>grpc-stub</artifactId><version>1.81.0</version></dependency>
+    <dependency><groupId>io.grpc</groupId><artifactId>grpc-protobuf</artifactId><version>1.81.0</version></dependency>
+    <dependency><groupId>io.grpc</groupId><artifactId>grpc-services</artifactId><version>1.81.0</version></dependency>
+  </dependencies>
+</project>

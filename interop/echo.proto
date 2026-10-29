@@ -1,0 +1,12 @@
+syntax = "proto3";
+package hydrangea.test;
+
+message EchoRequest { string text = 1; int32 n = 2; bytes blob = 3; }
+message EchoReply   { string text = 1; int32 n = 2; bytes blob = 3; }
+
+service Echo {
+  rpc Unary        (EchoRequest)        returns (EchoReply);
+  rpc ServerStream (EchoRequest)        returns (stream EchoReply);
+  rpc ClientStream (stream EchoRequest) returns (EchoReply);
+  rpc Bidi         (stream EchoRequest) returns (stream EchoReply);
+}

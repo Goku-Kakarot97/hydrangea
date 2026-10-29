@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package my;
+
+// Khớp với io.hydrangea.examples.GrpcHelloExample
+message Name  { string name = 1; }
+message Greet { string text = 1; }
+
+service Greeter {
+  rpc Hello     (Name) returns (Greet);
+  rpc HelloMany (Name) returns (stream Greet);
+}

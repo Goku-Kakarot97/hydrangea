@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.hydrangea</groupId>
+    <artifactId>hydrangea-parent</artifactId>
+    <version>1.0.1</version>
+    <packaging>pom</packaging>
+    <name>Hydrangea</name>
+    <description>Small, modern non-blocking network framework on top of Java NIO: a core, and protocol modules built on it</description>
+
+    <modules>
+        <module>hydrangea-core</module>
+        <module>hydrangea-quic</module>
+        <module>hydrangea-http</module>
+        <module>hydrangea-grpc</module>
+        <module>hydrangea-amqp</module>
+        <module>hydrangea-mqtt</module>
+        <module>hydrangea-redis</module>
+        <module>hydrangea-kafka</module>
+        <module>hydrangea-sql</module>
+        <module>hydrangea-postgres</module>
+        <module>hydrangea-mysql</module>
+        <module>hydrangea-micrometer</module>
+         <module>hydrangea-examples</module>
+    </modules>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <!-- The libraries have no dependencies of their own (ArchitectureTest checks it); external artifacts are JUnit, for tests, and Micrometer, in the
+         hydrangea-micrometer module only (optional, nothing else uses it). -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>5.10.1</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.2.5</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>
