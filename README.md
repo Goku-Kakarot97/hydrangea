@@ -2,7 +2,7 @@
 
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.goku-kakarot97/hydrangea-core?label=Maven%20Central)](https://central.sonatype.com/namespace/io.github.goku-kakarot97) [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE) ![Java](https://img.shields.io/badge/Java-21-orange)
 
-A small non-blocking networking framework for Java 21 with **no third-party dependencies**: an event loop on `java.nio`, and on top of it servers for HTTP/1.1, HTTP/2, HTTP/3 (experimental), WebSocket, SSE and gRPC, and clients for HTTP, gRPC, Redis, Kafka, MQTT, AMQP, PostgreSQL and MySQL. Every protocol is its own Maven module; the whole thing is about the size of one mid-sized library.
+A small non-blocking networking framework for Java 21 with **no third-party dependencies**: an event loop on `java.nio`, and on top of it servers for HTTP/1.1, HTTP/2, HTTP/3 (experimental), WebSocket, SSE and gRPC, and clients for HTTP, gRPC, Redis, Kafka, MQTT, AMQP, PostgreSQL, MySQL and Elasticsearch. Every protocol is its own Maven module; the whole thing is about the size of one mid-sized library.
 
 Vietnamese documentation, with the full detail of every feature and every measurement: [`README-VI.md`](README-VI.md).
 
@@ -30,7 +30,7 @@ Maven Central, group `io.github.goku-kakarot97` (the Java packages stay `io.hydr
 ```xml
 <dependency>
     <groupId>io.github.goku-kakarot97</groupId>
-    <artifactId>hydrangea-http</artifactId>      <!-- or hydrangea-grpc, -redis, -kafka, -mqtt, -amqp, -postgres, -mysql, -sql, -micrometer -->
+    <artifactId>hydrangea-http</artifactId>      <!-- or hydrangea-grpc, -redis, -kafka, -mqtt, -amqp, -postgres, -mysql, -sql, -elasticsearch, -micrometer -->
     <version>1.0.1</version>
 </dependency>
 ```
@@ -52,6 +52,7 @@ Or straight from a tag through [JitPack](https://jitpack.io/#Goku-Kakarot97/hydr
 | `hydrangea-postgres` | PostgreSQL client (wire protocol v3): pipelining, prepared-statement cache, binary transfer, COPY, streaming, batches, arrays, LISTEN/NOTIFY, SCRAM, TLS, reconnect, pool | core, sql |
 | `hydrangea-mysql` | MySQL client (MySQL protocol): pipelining, server-side prepared statements (binary protocol), cursors, batches, `caching_sha2_password`, TLS, reconnect, pool; runs on MariaDB and behind ProxySQL | core, sql |
 | `hydrangea-sql` | The interfaces the two database clients share (`SqlPool`, `SqlClient`, `SqlResult`, `SqlRow`, `SqlException`) | – |
+| `hydrangea-elasticsearch` | Elasticsearch / OpenSearch client over the HTTP client: documents, search, scroll, count, bulk with a batching indexer (size/byte/time flush, 429 retry, back-pressure), node failover, gzip both ways, records in and out by reflection, raw requests for the rest, a strict JSON reader/writer | core, http |
 | `hydrangea-micrometer` | `MetricsSink` for Micrometer (Prometheus, OTLP, Datadog, JMX…) | core |
 | `hydrangea-examples` | Runnable examples and the cross-module tests | all |
 
@@ -96,7 +97,21 @@ KafkaProducer producer = KafkaClient.create(group, KafkaConfig.of("localhost:909
 producer.send("topic", key, value);                                   // idempotent, acks=all, batched, from any thread
 ```
 
-Examples for every protocol are in `hydrangea-examples/src/main/java/io/hydrangea/examples` (`HttpExample`, `Http2Example`, `Http3Example`, `GrpcHelloExample`, `WebSocketChatExample`, `SseExample`, `RedisExample`, `KafkaExample`, `MqttExample`, `AmqpExample`, `PgExample`, `SqlExample`, …).
+**Elasticsearch**: the HTTP client underneath (a keep-alive pool per node, requests spread over the nodes, a node that cannot be reached is skipped for a while), JSON as plain `Map`/`List`.
+
+```java
+EsClient es = EsClient.connect(group, EsConfig.of("http://localhost:9200").withBasicAuth("elastic", pw)).join();
+es.index("products", "1", Map.of("name", "lamp", "price", 20));
+EsSearchResponse r = es.search("products", Json.obj("query", Json.obj("match", Json.obj("name", "lamp")))).join();
+EsBulkIndexer ix = es.bulkIndexer(EsBulkIndexer.Options.defaults());    // gathers add()s into bulk requests of 500 / 5 MB / 1 s
+
+record Product(String name, double price, @Json.Name("created_at") Instant createdAt) {}      // records in and out, no library
+es.index("products", "2", new Product("chair", 35, Instant.now()));
+Product p = es.get("products", "2", Product.class).join();
+List<Product> cheap = es.search("products", Json.obj("query", Json.obj("range", Json.obj("price", Json.obj("lt", 30)))), Product.class).join();
+```
+
+Examples for every protocol are in `hydrangea-examples/src/main/java/io/hydrangea/examples` (`HttpExample`, `Http2Example`, `Http3Example`, `GrpcHelloExample`, `WebSocketChatExample`, `SseExample`, `RedisExample`, `KafkaExample`, `MqttExample`, `AmqpExample`, `PgExample`, `SqlExample`, `EsExample`, …).
 
 ## Performance
 

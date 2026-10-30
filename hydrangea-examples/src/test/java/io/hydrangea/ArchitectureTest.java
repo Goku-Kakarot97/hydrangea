@@ -49,9 +49,10 @@ class ArchitectureTest {
             Map.entry("websocket", Set.of("core", "codec", "pipeline", "tls", "http")),
             Map.entry("sse", Set.of("core", "pipeline", "http")),
             Map.entry("grpc", Set.of("core", "pipeline", "http")),
+            Map.entry("elasticsearch", Set.of("core", "http")),   // an HTTP API: the HTTP client does the wire work
             Map.entry("fuzz", Set.of()),                        // test helpers (core's test sources): JDK only
             Map.entry("testing", Set.of()),
-            Map.entry("examples", Set.of("core", "codec", "pipeline", "tls", "quic", "http2", "amqp", "mqtt", "redis", "kafka", "postgres", "mysql", "sql", "http", "websocket", "sse", "grpc")));
+            Map.entry("examples", Set.of("core", "codec", "pipeline", "tls", "quic", "http2", "amqp", "mqtt", "redis", "kafka", "postgres", "mysql", "sql", "http", "websocket", "sse", "grpc", "elasticsearch")));
 
     private static final Pattern PACKAGE_REF = Pattern.compile("\\bio\\.hydrangea\\.([a-z][a-z0-9]*)\\.");
     private static final Pattern CORE_REF = Pattern.compile("\\bio\\.hydrangea\\.[A-Z]");

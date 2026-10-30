@@ -52,6 +52,7 @@
         <module>hydrangea-sql</module>
         <module>hydrangea-postgres</module>
         <module>hydrangea-mysql</module>
+        <module>hydrangea-elasticsearch</module>
         <module>hydrangea-micrometer</module>
          <module>hydrangea-examples</module>
     </modules>
