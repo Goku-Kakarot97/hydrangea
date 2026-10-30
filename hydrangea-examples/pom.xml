@@ -79,6 +79,11 @@
         </dependency>
         <dependency>
             <groupId>io.github.goku-kakarot97</groupId>
+            <artifactId>hydrangea-mongodb</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.goku-kakarot97</groupId>
             <artifactId>hydrangea-sql</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -131,6 +136,7 @@
                                 <resource><directory>${project.basedir}/../hydrangea-sql/target/classes</directory></resource>
                                 <resource><directory>${project.basedir}/../hydrangea-mysql/target/classes</directory></resource>
                                 <resource><directory>${project.basedir}/../hydrangea-elasticsearch/target/classes</directory></resource>
+                                <resource><directory>${project.basedir}/../hydrangea-mongodb/target/classes</directory></resource>
                                 <resource><directory>${project.build.outputDirectory}</directory></resource>
                             </resources>
                         </configuration>

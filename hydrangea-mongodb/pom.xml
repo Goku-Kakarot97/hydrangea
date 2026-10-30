@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.goku-kakarot97</groupId>
+        <artifactId>hydrangea-parent</artifactId>
+        <version>1.0.1</version>
+    </parent>
+
+    <artifactId>hydrangea-mongodb</artifactId>
+    <name>Hydrangea mongodb</name>
+    <description>MongoDB client (OP_MSG wire protocol, BSON): pipelined commands over shared connections, SCRAM-SHA-256/SHA-1, TLS, cursors, records in and out, no third-party dependency</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.github.goku-kakarot97</groupId>
+            <artifactId>hydrangea-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.goku-kakarot97</groupId>
+            <artifactId>hydrangea-core</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

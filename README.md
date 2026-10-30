@@ -2,7 +2,7 @@
 
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.goku-kakarot97/hydrangea-core?label=Maven%20Central)](https://central.sonatype.com/namespace/io.github.goku-kakarot97) [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE) ![Java](https://img.shields.io/badge/Java-21-orange)
 
-A small non-blocking networking framework for Java 21 with **no third-party dependencies**: an event loop on `java.nio`, and on top of it servers for HTTP/1.1, HTTP/2, HTTP/3 (experimental), WebSocket, SSE and gRPC, and clients for HTTP, gRPC, Redis, Kafka, MQTT, AMQP, PostgreSQL, MySQL and Elasticsearch. Every protocol is its own Maven module; the whole thing is about the size of one mid-sized library.
+A small non-blocking networking framework for Java 21 with **no third-party dependencies**: an event loop on `java.nio`, and on top of it servers for HTTP/1.1, HTTP/2, HTTP/3 (experimental), WebSocket, SSE and gRPC, and clients for HTTP, gRPC, Redis, Kafka, MQTT, AMQP, PostgreSQL, MySQL, MongoDB and Elasticsearch. Every protocol is its own Maven module; the whole thing is about the size of one mid-sized library.
 
 Vietnamese documentation, with the full detail of every feature and every measurement: [`README-VI.md`](README-VI.md).
 
@@ -30,7 +30,7 @@ Maven Central, group `io.github.goku-kakarot97` (the Java packages stay `io.hydr
 ```xml
 <dependency>
     <groupId>io.github.goku-kakarot97</groupId>
-    <artifactId>hydrangea-http</artifactId>      <!-- or hydrangea-grpc, -redis, -kafka, -mqtt, -amqp, -postgres, -mysql, -sql, -elasticsearch, -micrometer -->
+    <artifactId>hydrangea-http</artifactId>      <!-- or hydrangea-grpc, -redis, -kafka, -mqtt, -amqp, -postgres, -mysql, -sql, -mongodb, -elasticsearch, -micrometer -->
     <version>1.0.1</version>
 </dependency>
 ```
@@ -52,6 +52,7 @@ Or straight from a tag through [JitPack](https://jitpack.io/#Goku-Kakarot97/hydr
 | `hydrangea-postgres` | PostgreSQL client (wire protocol v3): pipelining, prepared-statement cache, binary transfer, COPY, streaming, batches, arrays, LISTEN/NOTIFY, SCRAM, TLS, reconnect, pool | core, sql |
 | `hydrangea-mysql` | MySQL client (MySQL protocol): pipelining, server-side prepared statements (binary protocol), cursors, batches, `caching_sha2_password`, TLS, reconnect, pool; runs on MariaDB and behind ProxySQL | core, sql |
 | `hydrangea-sql` | The interfaces the two database clients share (`SqlPool`, `SqlClient`, `SqlResult`, `SqlRow`, `SqlException`) | – |
+| `hydrangea-mongodb` | MongoDB client (OP_MSG wire protocol, own BSON): pipelined commands over N shared connections, replica-set discovery and failover, retryable writes, multi-document transactions, SCRAM-SHA-256/SHA-1, TLS, find/aggregate cursors, insert/update/delete/findAndModify, indexes, records in and out, `mongodb://` URIs | core, codec |
 | `hydrangea-elasticsearch` | Elasticsearch / OpenSearch client over the HTTP client: documents, search, scroll, count, bulk with a batching indexer (size/byte/time flush, 429 retry, back-pressure), node failover, gzip both ways, records in and out by reflection, raw requests for the rest, a strict JSON reader/writer | core, http |
 | `hydrangea-micrometer` | `MetricsSink` for Micrometer (Prometheus, OTLP, Datadog, JMX…) | core |
 | `hydrangea-examples` | Runnable examples and the cross-module tests | all |
@@ -111,7 +112,19 @@ Product p = es.get("products", "2", Product.class).join();
 List<Product> cheap = es.search("products", Json.obj("query", Json.obj("range", Json.obj("price", Json.obj("lt", 30)))), Product.class).join();
 ```
 
-Examples for every protocol are in `hydrangea-examples/src/main/java/io/hydrangea/examples` (`HttpExample`, `Http2Example`, `Http3Example`, `GrpcHelloExample`, `WebSocketChatExample`, `SseExample`, `RedisExample`, `KafkaExample`, `MqttExample`, `AmqpExample`, `PgExample`, `SqlExample`, `EsExample`, …).
+**MongoDB**: its own BSON and OP_MSG, the same one-connection-many-threads model as Redis (commands pipelined, replies matched by id), N connections to the primary for server-side parallelism. Give it the replica set's seeds: it finds the primary, follows a step-down (reads and retryable writes are sent again, exactly once), and runs transactions.
+
+```java
+MongoClient mongo = MongoClient.connect(group, MongoConfig.parse("mongodb://app:pw@localhost:27017/shop?authSource=admin").withConnections(4)).join();
+MongoCollection products = mongo.collection("products");
+products.insertOne(Bson.doc("name", "lamp", "price", 20));
+products.find(Bson.doc("price", Bson.doc("$lt", 30)), FindOptions.defaults().withSort(Bson.doc("price", 1)).withLimit(10)).join();
+products.findCursor(null, FindOptions.defaults().withBatchSize(1000)).join().forEach(Product.class, p -> ...);   // records, batch by batch
+mongo.transaction(s -> s.collection("accounts").updateOne(Bson.doc("_id", "a"), Bson.doc("$inc", Bson.doc("balance", -10)))
+        .thenCompose(r -> s.collection("accounts").updateOne(Bson.doc("_id", "b"), Bson.doc("$inc", Bson.doc("balance", 10))))).join();
+```
+
+Examples for every protocol are in `hydrangea-examples/src/main/java/io/hydrangea/examples` (`HttpExample`, `Http2Example`, `Http3Example`, `GrpcHelloExample`, `WebSocketChatExample`, `SseExample`, `RedisExample`, `KafkaExample`, `MqttExample`, `AmqpExample`, `PgExample`, `SqlExample`, `MongoExample`, `EsExample`, …).
 
 ## Performance
 

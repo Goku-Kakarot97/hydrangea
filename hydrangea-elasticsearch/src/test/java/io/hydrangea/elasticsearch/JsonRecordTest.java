@@ -100,7 +100,7 @@ class JsonRecordTest {
         assertTrue(e.getMessage().contains("tags"), e.getMessage());
         e = assertThrows(IllegalArgumentException.class, () -> Json.to(Product.class, Json.parse("{\"color\":\"blue\"}")));
         assertTrue(e.getMessage().contains("no constant blue"), e.getMessage());
-        assertEquals("{\"a\":1}", Json.to(String.class, Json.parse("{\"a\":1}")), "a String component takes an object as its JSON text (raw JSON kept as text)");
+        assertThrows(IllegalArgumentException.class, () -> Json.to(String.class, Json.parse("{\"a\":1}")), "a String component does not swallow an object");
         assertThrows(IllegalArgumentException.class, () -> Json.to(Thread.class, Json.parse("{}")), "not a record, not convertible");
     }
 
