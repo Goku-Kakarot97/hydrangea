@@ -1,6 +1,11 @@
 package io.hydrangea.fuzz;
 
 import io.hydrangea.EventLoopGroup;
+import io.hydrangea.log.Level;
+import io.hydrangea.log.Log;
+import io.hydrangea.log.LogEvent;
+import io.hydrangea.log.LogStage;
+import io.hydrangea.log.Registration;
 import io.hydrangea.examples.GrpcEchoExample;
 import io.hydrangea.examples.GrpcEchoExample.Msg;
 import io.hydrangea.grpc.CallOptions;
@@ -30,9 +35,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
 
 import static io.hydrangea.fuzz.ProtocolFuzzTest.cat;
 import static io.hydrangea.fuzz.ProtocolFuzzTest.frame;
@@ -47,29 +49,18 @@ class ClientFuzzTest {
     static EventLoopGroup group;
     static ServerSocket listener;
     static volatile byte[] payload = new byte[0];
-    static final List<LogRecord> LOGGED = new CopyOnWriteArrayList<>();
-    static Handler logHandler;
+    static final List<LogEvent> LOGGED = new CopyOnWriteArrayList<>();
+    static Registration logHandler;
     static Thread acceptor;
 
     @BeforeAll
     static void start() throws Exception {
-        logHandler = new Handler() {
-            @Override
-            public void publish(LogRecord r) {
-                if (r.getLevel().intValue() >= Level.WARNING.intValue() && r.getLoggerName() != null && r.getLoggerName().startsWith("io.hydrangea")) {
-                    LOGGED.add(r);
-                }
+        // the log oracle: a WARN or ERROR from the framework during a campaign is a finding (hydrangea-log is the System.Logger backend here)
+        logHandler = Log.on(Level.WARN, LogStage.each(e -> {
+            if (e.logger().startsWith("io.hydrangea")) {
+                LOGGED.add(e);
             }
-
-            @Override
-            public void flush() {
-            }
-
-            @Override
-            public void close() {
-            }
-        };
-        java.util.logging.Logger.getLogger("").addHandler(logHandler);
+        }));
         group = new EventLoopGroup(2);
         listener = new ServerSocket(0, 50, InetAddress.getLoopbackAddress());
         acceptor = new Thread(() -> {
@@ -94,7 +85,7 @@ class ClientFuzzTest {
 
     @AfterAll
     static void stop() throws Exception {
-        java.util.logging.Logger.getLogger("").removeHandler(logHandler);
+        logHandler.cancel();
         listener.close();
         group.close();
     }
@@ -124,10 +115,11 @@ class ClientFuzzTest {
         } catch (java.util.concurrent.ExecutionException | java.util.concurrent.CancellationException failedCleanly) {
             // an error reported to the caller is the right outcome
         }
+        Log.flush();                                       // the oracle runs on the log thread
         if (LOGGED.size() > logged) {
-            LogRecord r = LOGGED.get(logged);
-            throw new AssertionError("the client logged: " + r.getMessage() + " " + r.getThrown() + (r.getThrown() != null && r.getThrown().getStackTrace().length > 0
-                    ? " at " + r.getThrown().getStackTrace()[0] : ""));
+            LogEvent r = LOGGED.get(logged);
+            throw new AssertionError("the client logged: " + r.message() + " " + r.cause() + (r.cause() != null && r.cause().getStackTrace().length > 0
+                    ? " at " + r.cause().getStackTrace()[0] : ""));
         }
     }
 

@@ -54,6 +54,7 @@ Or straight from a tag through [JitPack](https://jitpack.io/#Goku-Kakarot97/hydr
 | `hydrangea-sql` | The interfaces the two database clients share (`SqlPool`, `SqlClient`, `SqlResult`, `SqlRow`, `SqlException`) | – |
 | `hydrangea-mongodb` | MongoDB client (OP_MSG wire protocol, own BSON): pipelined commands over N shared connections, replica-set discovery and failover, retryable writes, multi-document transactions, SCRAM-SHA-256/SHA-1, TLS, find/aggregate cursors, insert/update/delete/findAndModify, indexes, records in and out, `mongodb://` URIs | core, codec |
 | `hydrangea-elasticsearch` | Elasticsearch / OpenSearch client over the HTTP client: documents, search, scroll, count, bulk with a batching indexer (size/byte/time flush, 429 retry, back-pressure), node failover, gzip both ways, records in and out by reflection, raw requests for the rest, a strict JSON reader/writer | core, http |
+| `hydrangea-log` | Logging: lock-free async ring buffer, a chain of stages (filter, redact, enrich, append), handlers registered per level, `{}` placeholders and structured fields, line or JSON output, rolling files, `hydrangea-log.properties`; the `System.Logger` backend every other module logs through | – |
 | `hydrangea-micrometer` | `MetricsSink` for Micrometer (Prometheus, OTLP, Datadog, JMX…) | core |
 | `hydrangea-examples` | Runnable examples and the cross-module tests | all |
 
@@ -175,6 +176,29 @@ Recording latency costs 39 ns per call when a sink is bound and 7 ns when none i
 ## Metrics
 
 `group.metrics()` counts connections, bytes, loop tasks and the longest a callback held a loop; every protocol adds its own (`http.server.duration`, `grpc.server.calls{method,code}`, `kafka.producer.records{outcome}`, `pg.queries{outcome}`, `pg.pool.waiting`, `my.query.duration`, `redis.commands.pending`, `mqtt.client.publish.duration`, …). Export with `group.metrics().bindTo(new MicrometerSink(registry))` from `hydrangea-micrometer`, or implement the four-method `MetricsSink` for anything else; values are read at scrape time, the loops pay nothing.
+
+## Logging
+
+Every module logs through the JDK's `System.Logger`, so it works with whatever backend you already have. `hydrangea-log` is a backend of its own, written after the run of logging CVEs with the opposite design: a message is text and nothing else (no `${...}` lookups, no JNDI, no format directives), the configuration is data (no class names, no URLs, nothing fetched), and control characters are escaped so a user-supplied string cannot forge a second log line or drive a terminal. Put it on the class path and it is picked up through `META-INF/services`; the module itself has no dependency and nothing depends on it.
+
+```java
+private static final Logger log = Logger.get(OrderService.class);
+
+log.info("order {} placed by {}", orderId, user);                     // {} placeholders; an exception as the last argument gets its stack trace
+log.at(Level.WARN).kv("order", orderId).kv("ms", took).log("slow");   // structured fields: key=value in text, top-level keys in JSON
+try (var scope = LogContext.with("request", id)) { ... }              // per-thread context copied into every event
+
+Log.configure()
+   .level(Level.INFO).level("io.hydrangea.http", Level.DEBUG)
+   .stage(LogStage.map(e -> e.withMessage(redact(e.message()))))     // the chain: stages run in order, each passes the event on, changes it, or stops it
+   .console()
+   .file(Path.of("/var/log/app.log"))                                 // rolls at 100 MB, keeps 10
+   .apply();
+Log.on(Level.ERROR, (e, next) -> pager.alert(e));                      // registered per level: ERROR and above, whatever the main chain did
+Log.onExactly(Level.WARN, LogStage.each(e -> warnings.increment()));
+```
+
+A disabled call is one volatile read (1 ns). An enabled one renders the message on the caller's thread, then hands the event to a lock-free ring buffer; one daemon thread runs the chain, formats into a reused buffer and flushes the appenders once per batch. On this laptop, 2 million `info` calls with two arguments to a file: 144 ns each on one thread, 190 ns with four threads logging at once (5–7 million lines/s), against 2.2 µs synchronous and 7.7 µs for `java.util.logging`; in the same harness Log4j 2 with its Disruptor async loggers takes 200–320 ns and Logback's `AsyncAppender` 300–500 ns ([`RESULTS-LOG.md`](benchmark/RESULTS-LOG.md)). When the buffer is full the caller waits (or drops, with a counter, if you say so); at shutdown a hook drains it, and anything logged after that is written on the calling thread.
 
 ## Status and limits
 

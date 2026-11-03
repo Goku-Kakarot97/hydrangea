@@ -729,19 +729,12 @@ class ServerHardeningTest {
     @Test
     void theLoggerBackedAccessLogNeutralisesClientControlledText() throws Exception {
         List<String> lines = Collections.synchronizedList(new ArrayList<>());
-        java.util.logging.Logger jul = java.util.logging.Logger.getLogger("test.access");
-        jul.setUseParentHandlers(false);
-        java.util.logging.Handler capture = new java.util.logging.Handler() {
-            public void publish(java.util.logging.LogRecord r) {
-                lines.add(r.getMessage());
+        io.hydrangea.log.Registration capture = io.hydrangea.log.Log.on(io.hydrangea.log.Level.INFO, io.hydrangea.log.LogStage.each(e -> {
+            if (e.logger().equals("test.access")) {
+                lines.add(e.message());
             }
-
-            public void flush() { }
-
-            public void close() { }
-        };
-        jul.addHandler(capture);
-        cleanup.add(() -> jul.removeHandler(capture));
+        }));
+        cleanup.add(capture::cancel);
         Server server = start(HttpConfig.defaults().withAccessLog(AccessLog.toLogger("test.access")));
         try (Raw raw = new Raw(port(server))) {
             raw.send(get("/fast", "User-Agent: evil\" 200 0 \"forged\\agent\r\n"));

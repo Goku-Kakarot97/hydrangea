@@ -32,6 +32,7 @@ Một repo, nhiều module Maven. Lõi dùng chung, mỗi giao thức là một 
 | `hydrangea-mongodb` | client MongoDB (giao thức OP_MSG, BSON tự viết): lệnh pipeline trên N kết nối dùng chung, tìm primary và chuyển node khi replica set bầu lại, retryable writes, transaction nhiều document, SCRAM-SHA-256/SHA-1, TLS, cursor cho find/aggregate, insert/update/delete/findAndModify, index, document vào/ra record, URI `mongodb://` | core, codec |
 | `hydrangea-elasticsearch` | client Elasticsearch / OpenSearch trên HTTP client: document, search, scroll, count, bulk với indexer gom lô (xả theo số lượng / byte / thời gian, thử lại 429, chống dồn), chuyển node khi một node chết, gzip hai chiều, document vào/ra record bằng reflection, request thô cho phần còn lại, bộ đọc/ghi JSON nhỏ | core, http |
 | `hydrangea-kafka` | client Kafka (producer có idempotent, consumer group, SASL/PLAIN) | core |
+| `hydrangea-log` | Thư viện log: ring buffer bất đồng bộ không khoá, chuỗi stage (lọc, che, bổ sung, ghi), đăng ký handler theo level, placeholder `{}` và trường có cấu trúc, xuất dạng dòng hoặc JSON, file xoay vòng, `hydrangea-log.properties`; là backend `System.Logger` mà mọi module khác log qua | - |
 | `hydrangea-micrometer` | `MetricsSink` cho Micrometer (Prometheus, OTLP, Datadog, JMX...). Module duy nhất có phụ thuộc ngoài (`micrometer-core`) | core |
 | `hydrangea-examples` | ví dụ chạy được (`io.hydrangea.examples`); test chạy xuyên module và `ArchitectureTest`; bước build cuối gộp class của mọi module vào `target/classes` ở gốc | tất cả (không xuất bản) |
 
@@ -254,6 +255,34 @@ Server.bind(group, addr, Options.defaults(), () -> Pipeline.of(
         public void onRead(Context ctx, Object line) throws Exception { ctx.write("echo: " + line); }
     }));
 ```
+
+## Log
+
+Mọi module log qua `System.Logger` của JDK, nên dùng được với backend nào bạn đang có. `hydrangea-log` là một backend riêng, viết sau loạt CVE của các thư viện log với thiết kế ngược lại: message là chữ và chỉ là chữ (không lookup `${...}`, không JNDI, không format directive), cấu hình là dữ liệu (không tên class, không URL, không tải gì về), ký tự điều khiển được escape nên chuỗi người dùng nhập không thể giả thêm một dòng log hay điều khiển terminal. Bỏ vào class path là được nhận qua `META-INF/services`; module không phụ thuộc gì và không module nào phụ thuộc nó.
+
+```java
+private static final Logger log = Logger.get(OrderService.class);
+
+log.info("order {} placed by {}", orderId, user);                     // placeholder {}; exception ở tham số cuối thì in stack trace
+log.at(Level.WARN).kv("order", orderId).kv("ms", took).log("slow");   // trường có cấu trúc: key=value ở dạng dòng, key cấp cao nhất ở JSON
+try (var scope = LogContext.with("request", id)) { ... }              // ngữ cảnh theo thread, chép vào mọi sự kiện
+
+Log.configure()
+   .level(Level.INFO).level("io.hydrangea.http", Level.DEBUG)
+   .stage(LogStage.map(e -> e.withMessage(redact(e.message()))))     // chuỗi (chain): stage chạy theo thứ tự, mỗi stage chuyển tiếp, sửa, hoặc chặn sự kiện
+   .console()
+   .file(Path.of("/var/log/app.log"))                                 // xoay ở 100 MB, giữ 10 file
+   .apply();
+Log.on(Level.ERROR, (e, next) -> pager.alert(e));                      // đăng ký theo level: ERROR trở lên, bất kể chuỗi chính làm gì
+Log.onExactly(Level.WARN, LogStage.each(e -> warnings.increment()));   // đúng một level
+```
+
+- **Đường chạy**: lệnh log bị tắt theo level là một lần đọc volatile (1 ns, không cấp phát). Lệnh được bật thì render message ngay trên thread gọi (tham số đọc lúc này, không phải sau), rồi đẩy sự kiện vào ring buffer không khoá (hàng đợi Vyukov nhiều producer một consumer, head/tail đệm chống false sharing); một thread daemon `hydrangea-log` kéo theo lô, chạy chuỗi stage, format vào một `StringBuilder` dùng lại, mã hoá UTF-8 vào `byte[]` dùng lại, và flush appender một lần mỗi lô (hoặc mỗi 512 sự kiện khi tải liên tục). Đo trên máy này: 2 triệu lệnh `info` hai tham số ghi ra file mất 144 ns/lệnh một thread, 190 ns với bốn thread (5–7 triệu dòng/giây); đồng bộ 2,2 µs; `java.util.logging` 7,7 µs; cùng bài đo, Log4j 2 async (Disruptor) 200–320 ns, Logback `AsyncAppender` 300–500 ns ([`RESULTS-LOG.md`](benchmark/RESULTS-LOG.md)).
+- **Đầy buffer**: mặc định thread gọi chờ chỗ trống (không mất gì, ứng dụng chậm theo appender); `dropWhenFull(true)` thì bỏ và đếm (`Log.stats()`). Khi tắt JVM, shutdown hook xả hàng đợi và flush; log sau đó ghi ngay trên thread gọi. Log từ trong một stage, hay từ chính thread log, cũng ghi ngay (không đệ quy, không deadlock). Stage ném lỗi được đếm và báo ra `System.err` vài lần, không bao giờ ném về người gọi.
+- **Chuỗi stage** (`LogStage`): nhận sự kiện và phần còn lại của chuỗi (`LogChain`); `LogStage.filter`, `minLevel`, `loggerPrefix`, `map` (trả bản sao đã sửa: `withMessage`, `with(k, v)`), `each`; `Appender` là stage ghi ra ngoài rồi chuyển tiếp: `console()` (ghi thẳng vào fd 1 qua buffer riêng, nhanh hơn `System.out` vì không flush từng dòng), `stderr()`, `stream(System.out)` (khi test framework bắt `System.out`), `file(path, format, maxBytes, maxFiles)`, `memory()` cho test, `to(line -> ...)`. Format: `LogFormat.line()` (`2026-11-03 10:15:42.123 INFO  [main] io.hydrangea.Server - listening port=8080`, giờ địa phương, phần đến giây tính một lần mỗi giây) và `LogFormat.json()` (một object mỗi dòng, `ts` UTC, `error.type/message/stack`).
+- **Cấu hình** bằng code (`Log.configure()...apply()`, áp lại lúc chạy được: hàng đợi cũ xả vào chuỗi mới), hoặc file `hydrangea-log.properties` trên class path (`level`, `level.<tên>`, `async`, `buffer`, `full=block|drop`, `format=line|json`, `zone`, `console=out|err|off`, `file`, `file.maxBytes`, `file.maxFiles`) và system property `-Dhydrangea.log.<khoá>` đè lên. Giá trị sai được báo ra `System.err` và dùng mặc định. Level theo tiền tố tên logger (`io.hydrangea` phủ `io.hydrangea.http.HttpServerStage`), đổi lúc chạy bằng `Log.level(...)` hoặc `logger.level(...)`.
+- **An toàn** (`SecurityTest`): `${jndi:ldap://...}`, `${env:...}`, `%n`, `{0,number}` đều ra y nguyên; CR/LF/ESC trong message, tên và giá trị trường, ngữ cảnh, message của exception được escape (`\r\n`, `\u001b`) nên một sự kiện luôn là một dòng (cộng stack trace của nó); JSON escape theo RFC 8259 (cả U+2028/2029); chuỗi nguyên nhân exception bị cắt ở 64 và vòng lặp nguyên nhân được phát hiện; `toString()`/`getMessage()` ném lỗi không thoát ra ngoài; test kiểm tra mã nguồn thư viện không import gì ngoài `java.*` và không có `Class.forName`, `java.net`, `ObjectInputStream`, `javax.naming`, reflection.
+- **Cầu `System.Logger`**: `HydrangeaLoggerFinder` đăng ký qua `META-INF/services/java.lang.System$LoggerFinder`; `{0}`-style thay thế như chữ (không qua `MessageFormat`), `ResourceBundle` được tra. JDK chỉ nhận một finder, nên đừng để hai backend cùng class path.
 
 ## Hiệu năng
 Đo trên một máy 8 nhân (macOS, JDK 25), tải và server cùng máy, mỗi ca 12 giây sau 8 giây khởi động; chỉ so sánh tương đối được. Mọi ca 0 lỗi.

@@ -45,6 +45,7 @@ class ArchitectureTest {
             Map.entry("postgres", Set.of("core", "codec", "pipeline", "tls", "sql")),
             Map.entry("mysql", Set.of("core", "codec", "pipeline", "tls", "sql")),
             Map.entry("micrometer", Set.of("core")),             // the one module allowed to import a third-party library (io.micrometer)
+            Map.entry("log", Set.of()),                         // the logging library: JDK only; core reaches it through System.Logger, never by name
             Map.entry("http", Set.of("core", "codec", "pipeline", "tls", "http2", "quic")),
             Map.entry("websocket", Set.of("core", "codec", "pipeline", "tls", "http")),
             Map.entry("sse", Set.of("core", "pipeline", "http")),
@@ -53,7 +54,7 @@ class ArchitectureTest {
             Map.entry("elasticsearch", Set.of("core", "codec", "http")),   // an HTTP API: the HTTP client does the wire work; codec: the record mapper
             Map.entry("fuzz", Set.of()),                        // test helpers (core's test sources): JDK only
             Map.entry("testing", Set.of()),
-            Map.entry("examples", Set.of("core", "codec", "pipeline", "tls", "quic", "http2", "amqp", "mqtt", "redis", "kafka", "postgres", "mysql", "sql", "http", "websocket", "sse", "grpc", "elasticsearch", "mongodb")));
+            Map.entry("examples", Set.of("core", "codec", "pipeline", "tls", "quic", "http2", "amqp", "mqtt", "redis", "kafka", "postgres", "mysql", "sql", "http", "websocket", "sse", "grpc", "elasticsearch", "mongodb", "log")));
 
     private static final Pattern PACKAGE_REF = Pattern.compile("\\bio\\.hydrangea\\.([a-z][a-z0-9]*)\\.");
     private static final Pattern CORE_REF = Pattern.compile("\\bio\\.hydrangea\\.[A-Z]");

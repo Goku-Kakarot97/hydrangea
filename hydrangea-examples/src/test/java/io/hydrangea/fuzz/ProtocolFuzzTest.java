@@ -1,6 +1,11 @@
 package io.hydrangea.fuzz;
 
 import io.hydrangea.EventLoopGroup;
+import io.hydrangea.log.Level;
+import io.hydrangea.log.Log;
+import io.hydrangea.log.LogEvent;
+import io.hydrangea.log.LogStage;
+import io.hydrangea.log.Registration;
 import io.hydrangea.Server;
 import io.hydrangea.examples.GrpcEchoExample;
 import io.hydrangea.examples.GrpcEchoExample.Msg;
@@ -38,9 +43,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -57,28 +59,17 @@ class ProtocolFuzzTest {
     static EventLoopGroup group;
     static Server server;
     static int port;
-    static final List<LogRecord> LOGGED = new CopyOnWriteArrayList<>();
-    static Handler logHandler;
+    static final List<LogEvent> LOGGED = new CopyOnWriteArrayList<>();
+    static Registration logHandler;
 
     @BeforeAll
     static void start() throws Exception {
-        logHandler = new Handler() {
-            @Override
-            public void publish(LogRecord r) {
-                if (r.getLevel().intValue() >= Level.WARNING.intValue() && r.getLoggerName() != null && r.getLoggerName().startsWith("io.hydrangea")) {
-                    LOGGED.add(r);
-                }
+        // the log oracle: a WARN or ERROR from the framework during a campaign is a finding (hydrangea-log is the System.Logger backend here)
+        logHandler = Log.on(Level.WARN, LogStage.each(e -> {
+            if (e.logger().startsWith("io.hydrangea")) {
+                LOGGED.add(e);
             }
-
-            @Override
-            public void flush() {
-            }
-
-            @Override
-            public void close() {
-            }
-        };
-        java.util.logging.Logger.getLogger("").addHandler(logHandler);
+        }));
         group = new EventLoopGroup(2);
         WebSocketConfig ws = WebSocketConfig.defaults().allowAnyOrigin().withMaxMessageBytes(64 * 1024);
         HttpRouter router = new HttpRouter()
@@ -108,7 +99,7 @@ class ProtocolFuzzTest {
 
     @AfterAll
     static void stop() {
-        java.util.logging.Logger.getLogger("").removeHandler(logHandler);
+        logHandler.cancel();
         server.close();
         group.close();
     }
@@ -199,10 +190,11 @@ class ProtocolFuzzTest {
                 // the server closed on us: an acceptable answer
             }
         }
+        Log.flush();                                       // the oracle runs on the log thread
         if (LOGGED.size() > logged) {
-            LogRecord r = LOGGED.get(logged);
-            String where = r.getThrown() == null ? "" : " " + r.getThrown() + " at " + (r.getThrown().getStackTrace().length > 0 ? r.getThrown().getStackTrace()[0] : "?");
-            throw new AssertionError("the server logged: " + r.getMessage() + where);
+            LogEvent r = LOGGED.get(logged);
+            String where = r.cause() == null ? "" : " " + r.cause() + " at " + (r.cause().getStackTrace().length > 0 ? r.cause().getStackTrace()[0] : "?");
+            throw new AssertionError("the server logged: " + r.message() + where);
         }
         long blockedMs = group.metrics().resetMaxBlockNanos() / 1_000_000;
         if (blockedMs > 250) {
@@ -263,6 +255,7 @@ class ProtocolFuzzTest {
         }, Set.of(IllegalArgumentException.class), 1000, 2000).isEmpty());
         int before = LOGGED.size();
         System.getLogger("io.hydrangea.selftest").log(System.Logger.Level.WARNING, "planted warning");
+        Log.flush();
         assertEquals(before + 1, LOGGED.size(), "the log oracle is blind");
         LOGGED.remove(LOGGED.size() - 1);
     }

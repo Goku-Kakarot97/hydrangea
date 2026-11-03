@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.goku-kakarot97</groupId>
+        <artifactId>hydrangea-parent</artifactId>
+        <version>1.0.1</version>
+    </parent>
+
+    <artifactId>hydrangea-log</artifactId>
+    <name>Hydrangea log</name>
+    <description>Small, fast, dependency-free logging: lock-free asynchronous ring buffer, chain of stages (filter, enrich, append), handlers registered per level, structured fields, line and JSON output, rolling files, a System.Logger backend; no lookups, no remote configuration, no code loaded from configuration</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

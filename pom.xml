@@ -54,6 +54,7 @@
         <module>hydrangea-mysql</module>
         <module>hydrangea-elasticsearch</module>
         <module>hydrangea-mongodb</module>
+        <module>hydrangea-log</module>
         <module>hydrangea-micrometer</module>
          <module>hydrangea-examples</module>
     </modules>
