@@ -42,6 +42,10 @@ public final class EventLoop implements Executor {
     private int spinCount;
 
     EventLoop(String name, Metrics metrics) {
+        this(name, metrics, false);
+    }
+
+    EventLoop(String name, Metrics metrics, boolean daemon) {
         try {
             this.selector = Selector.open();
         } catch (IOException e) {
@@ -49,6 +53,7 @@ public final class EventLoop implements Executor {
         }
         this.metrics = metrics;
         this.thread = new Thread(this::run, name);
+        thread.setDaemon(daemon);
     }
 
     void start() {

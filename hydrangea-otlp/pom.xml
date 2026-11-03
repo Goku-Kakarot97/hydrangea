@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.goku-kakarot97</groupId>
+        <artifactId>hydrangea-parent</artifactId>
+        <version>1.0.1</version>
+    </parent>
+
+    <artifactId>hydrangea-otlp</artifactId>
+    <name>Hydrangea otlp</name>
+    <description>TraceSink that exports the framework's spans to an OpenTelemetry collector (or Jaeger, Tempo ...) over OTLP, gRPC or HTTP/protobuf, with the framework's own gRPC and HTTP clients and a hand-written protobuf encoder: batching, a bounded queue, OTEL_* configuration. JDK only, no OpenTelemetry library</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.github.goku-kakarot97</groupId>
+            <artifactId>hydrangea-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.goku-kakarot97</groupId>
+            <artifactId>hydrangea-grpc</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

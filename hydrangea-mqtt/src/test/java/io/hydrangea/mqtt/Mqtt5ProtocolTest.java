@@ -278,7 +278,8 @@ class Mqtt5ProtocolTest {
             assertEquals("reply/me", got.responseTopic);
             assertArrayEquals(new byte[] {1, 2, 3}, got.correlationData);
             assertEquals(120L, got.messageExpiry);
-            assertEquals(List.of(new UserProperty("a", "1"), new UserProperty("a", "2")), got.user, "repeatable, in order");
+            assertEquals(List.of(new UserProperty("a", "1"), new UserProperty("a", "2")),
+                    got.user.stream().filter(u -> !u.name().equals("traceparent")).toList(), "repeatable, in order (the client adds traceparent for tracing)");
 
             // and the other way
             List<MqttMessage> in = new CopyOnWriteArrayList<>();

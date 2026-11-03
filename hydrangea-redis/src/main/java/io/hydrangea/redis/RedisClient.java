@@ -158,6 +158,18 @@ public final class RedisClient implements AutoCloseable {
             return CompletableFuture.failedFuture(e);
         }
         Cmd c = new Cmd(bytes, new CompletableFuture<>(), convert, null);
+        // a CLIENT span per command, child of the calling thread's current span: the command name only, never its arguments (keys and values may be sensitive)
+        String name = args.length > 0 && args[0] instanceof String s ? s.toUpperCase(java.util.Locale.ROOT) : "redis.command";
+        io.hydrangea.trace.Span span = io.hydrangea.trace.Tracing.start(name, io.hydrangea.trace.Span.Kind.CLIENT);
+        if (span.isRecording()) {
+            span.attribute("db.system.name", "redis").attribute("db.operation.name", name).attribute("server.address", config.host()).attribute("server.port", config.port());
+            c.future.whenComplete((r, err) -> {
+                if (err != null) {
+                    span.error(err instanceof java.util.concurrent.CompletionException && err.getCause() != null ? err.getCause() : err);
+                }
+                span.end();
+            });
+        }
         submit(c);
         return (CompletableFuture<T>) c.future;
     }

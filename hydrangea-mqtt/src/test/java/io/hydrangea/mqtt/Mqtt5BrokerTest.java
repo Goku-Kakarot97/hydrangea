@@ -114,7 +114,8 @@ class Mqtt5BrokerTest {
         assertEquals(topic + "/reply", got.responseTopic());
         assertArrayEquals(new byte[] {7, 8, 9}, got.correlationData());
         assertTrue(got.messageExpirySeconds() != null && got.messageExpirySeconds() <= 300 && got.messageExpirySeconds() > 290, "the time left: " + got.messageExpirySeconds());
-        assertEquals(List.of(new UserProperty("trace", "abc"), new UserProperty("trace", "def")), got.userProperties());
+        assertEquals(List.of(new UserProperty("trace", "abc"), new UserProperty("trace", "def")),
+                got.userProperties().stream().filter(u -> !u.name().equals("traceparent")).toList(), "ours, in order (the client adds traceparent for tracing)");
         assertFalse(got.subscriptionIds().isEmpty(), "the broker says which subscription matched");
     }
 

@@ -19,11 +19,19 @@ public final class EventLoopGroup implements AutoCloseable {
     }
 
     public EventLoopGroup(int threads) {
+        this(threads, false);
+    }
+
+    /**
+     * With {@code daemon}, the loop threads do not keep the JVM alive: for a group that only serves a background client (the OTLP
+     * exporter), so that a program ends when its own work does. A server's group must not be a daemon one.
+     */
+    public EventLoopGroup(int threads, boolean daemon) {
         if (threads < 1) {
             throw new IllegalArgumentException("threads must be >= 1");
         }
         int id = GROUP_IDS.incrementAndGet();
-        loops = IntStream.range(0, threads).mapToObj(i -> new EventLoop("hydrangea-" + id + "-loop-" + i, metrics)).toList();
+        loops = IntStream.range(0, threads).mapToObj(i -> new EventLoop("hydrangea-" + id + "-loop-" + i, metrics, daemon)).toList();
         loops.forEach(EventLoop::start);
     }
 

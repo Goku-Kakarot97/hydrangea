@@ -1,5 +1,7 @@
 package io.hydrangea.http;
 
+import io.hydrangea.trace.Span;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -24,17 +26,17 @@ public final class RouteRequest {
 
     private final HttpRequest request;
     private final Map<String, String> pathVariables;
-    private final String traceId;
+    private final Span span;
     private Map<String, List<String>> params; // lazy
 
     RouteRequest(HttpRequest request, Map<String, String> pathVariables) {
         this(request, pathVariables, null);
     }
 
-    RouteRequest(HttpRequest request, Map<String, String> pathVariables, String traceId) {
+    RouteRequest(HttpRequest request, Map<String, String> pathVariables, Span span) {
         this.request = request;
         this.pathVariables = pathVariables;
-        this.traceId = traceId;
+        this.span = span;
     }
 
     public HttpRequest request() {
@@ -42,11 +44,35 @@ public final class RouteRequest {
     }
 
     /**
-     * The request's trace id (see {@link HttpRouter}): what the route's log lines carry, to reopen in a callback with
-     * {@code LogContext.with(HttpRouter.TRACE_KEY, r.traceId())}. {@code null} when tracing is off.
+     * The request's server span (see {@link HttpRouter}): current while the route runs; reopen it in a callback with
+     * {@code try (var scope = r.span().makeCurrent()) { ... }}. {@code null} when tracing is off.
      */
+    public Span span() {
+        return span;
+    }
+
+    /** The request's trace id: what the route's log lines carry as {@code trace_id}. {@code null} when tracing is off. */
     public String traceId() {
-        return traceId;
+        return span == null ? null : span.context().traceId();
+    }
+
+    /**
+     * Reopens the request's span on the calling thread, for a callback that runs after the route returned (a future's continuation,
+     * a task on an executor): the span becomes current again and the log context gets {@code trace_id} and {@code span_id} back, until
+     * the scope closes. {@code try (var scope = r.traced()) { log.info("..."); db.query(...); }}. A no-op when tracing is off.
+     */
+    public Span.Scope traced() {
+        if (span == null) {
+            return () -> { };
+        }
+        Span.Scope current = span.makeCurrent();
+        io.hydrangea.log.LogContext.Scope trace = io.hydrangea.log.LogContext.with(HttpRouter.TRACE_KEY, span.context().traceId());
+        io.hydrangea.log.LogContext.Scope spanId = io.hydrangea.log.LogContext.with(HttpRouter.SPAN_KEY, span.context().spanId());
+        return () -> {
+            spanId.close();
+            trace.close();
+            current.close();
+        };
     }
 
     public String method() {

@@ -37,24 +37,26 @@ class ArchitectureTest {
             Map.entry("tls", Set.of("core", "codec", "pipeline", "log")),
             Map.entry("quic", Set.of("core", "log")),
             Map.entry("http2", Set.of()),                       // HPACK / QPACK: pure functions on bytes
-            Map.entry("mqtt", Set.of("core", "codec", "pipeline", "tls", "http", "websocket", "log")),   // http/websocket: only MqttWebSocket
-            Map.entry("amqp", Set.of("core", "codec", "pipeline", "tls", "log")),
-            Map.entry("redis", Set.of("core", "codec", "pipeline", "tls", "log")),
-            Map.entry("kafka", Set.of("core", "codec", "pipeline", "tls", "log")),
+            Map.entry("mqtt", Set.of("core", "codec", "pipeline", "tls", "http", "websocket", "log", "trace")),   // http/websocket: only MqttWebSocket
+            Map.entry("amqp", Set.of("core", "codec", "pipeline", "tls", "log", "trace")),
+            Map.entry("redis", Set.of("core", "codec", "pipeline", "tls", "log", "trace")),
+            Map.entry("kafka", Set.of("core", "codec", "pipeline", "tls", "log", "trace")),
             Map.entry("sql", Set.of()),                         // the interfaces the database clients share: JDK only
-            Map.entry("postgres", Set.of("core", "codec", "pipeline", "tls", "sql", "log")),
-            Map.entry("mysql", Set.of("core", "codec", "pipeline", "tls", "sql", "log")),
-            Map.entry("micrometer", Set.of("core")),             // the one module allowed to import a third-party library (io.micrometer)
+            Map.entry("postgres", Set.of("core", "codec", "pipeline", "tls", "sql", "log", "trace")),
+            Map.entry("mysql", Set.of("core", "codec", "pipeline", "tls", "sql", "log", "trace")),
+            Map.entry("trace", Set.of()),                       // spans: the TraceSink seam, JDK only
+            Map.entry("micrometer", Set.of("core")),             // bridge to a third-party library (io.micrometer)
+            Map.entry("otlp", Set.of("core", "trace", "grpc", "http", "log")),   // OTLP export with our own gRPC / HTTP client: JDK only
             Map.entry("log", Set.of()),                         // the logging library: JDK only, at the bottom of the graph; every module logs through it
-            Map.entry("http", Set.of("core", "codec", "pipeline", "tls", "http2", "quic", "log")),
+            Map.entry("http", Set.of("core", "codec", "pipeline", "tls", "http2", "quic", "log", "trace")),
             Map.entry("websocket", Set.of("core", "codec", "pipeline", "tls", "http", "log")),
             Map.entry("sse", Set.of("core", "pipeline", "http", "log")),
-            Map.entry("grpc", Set.of("core", "pipeline", "http", "log")),
-            Map.entry("mongodb", Set.of("core", "codec", "pipeline", "tls", "log")),
-            Map.entry("elasticsearch", Set.of("core", "codec", "http", "log")),   // an HTTP API: the HTTP client does the wire work; codec: the record mapper
+            Map.entry("grpc", Set.of("core", "pipeline", "http", "log", "trace")),
+            Map.entry("mongodb", Set.of("core", "codec", "pipeline", "tls", "log", "trace")),
+            Map.entry("elasticsearch", Set.of("core", "codec", "http", "log", "trace")),   // an HTTP API: the HTTP client does the wire work; codec: the record mapper
             Map.entry("fuzz", Set.of()),                        // test helpers (core's test sources): JDK only
             Map.entry("testing", Set.of()),
-            Map.entry("examples", Set.of("core", "codec", "pipeline", "tls", "quic", "http2", "amqp", "mqtt", "redis", "kafka", "postgres", "mysql", "sql", "http", "websocket", "sse", "grpc", "elasticsearch", "mongodb", "log")));
+            Map.entry("examples", Set.of("core", "codec", "pipeline", "tls", "quic", "http2", "amqp", "mqtt", "redis", "kafka", "postgres", "mysql", "sql", "http", "websocket", "sse", "grpc", "elasticsearch", "mongodb", "log", "trace", "otlp")));
 
     private static final Pattern PACKAGE_REF = Pattern.compile("\\bio\\.hydrangea\\.([a-z][a-z0-9]*)\\.");
     private static final Pattern CORE_REF = Pattern.compile("\\bio\\.hydrangea\\.[A-Z]");

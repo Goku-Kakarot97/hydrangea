@@ -165,7 +165,40 @@ public final class KafkaProducer implements AutoCloseable {
     }
 
     /** {@code partition} null lets the partitioner choose: the hash of the key (murmur2, as the Java client does), or, without a key, a partition kept until its batch is full. */
+    /**
+     * Sends one record. The send is a PRODUCER span ({@code <topic> publish}), child of the calling thread's current span, and the
+     * record carries a {@code traceparent} header for it unless one was given, so the consumer can continue the trace
+     * ({@link ConsumerRecord#startProcessing()}).
+     */
     public CompletableFuture<RecordMetadata> send(String topic, Integer partition, byte[] key, byte[] value, List<Header> headers) {
+        io.hydrangea.trace.Span span = io.hydrangea.trace.Tracing.start(topic + " publish", io.hydrangea.trace.Span.Kind.PRODUCER);
+        if (span.isRecording()) {
+            span.attribute("messaging.system", "kafka").attribute("messaging.destination.name", String.valueOf(topic)).attribute("messaging.operation.type", "send");
+        }
+        List<Header> hs = headers == null ? List.of() : headers;
+        boolean has = false;
+        for (Header h : hs) {
+            has |= "traceparent".equals(h.key());
+        }
+        if (!has) {
+            List<Header> withTrace = new java.util.ArrayList<>(hs.size() + 1);
+            withTrace.addAll(hs);
+            withTrace.add(new Header("traceparent", span.context().traceparent().getBytes(java.nio.charset.StandardCharsets.US_ASCII)));
+            hs = withTrace;
+        }
+        CompletableFuture<RecordMetadata> f = send0(topic, partition, key, value, hs);
+        f.whenComplete((meta, err) -> {
+            if (err != null) {
+                span.error(err instanceof java.util.concurrent.CompletionException && err.getCause() != null ? err.getCause() : err);
+            } else if (span.isRecording() && meta != null) {
+                span.attribute("messaging.destination.partition.id", String.valueOf(meta.partition())).attribute("messaging.kafka.offset", meta.offset());
+            }
+            span.end();
+        });
+        return f;
+    }
+
+    private CompletableFuture<RecordMetadata> send0(String topic, Integer partition, byte[] key, byte[] value, List<Header> headers) {
         if (closed) {
             return CompletableFuture.failedFuture(new KafkaException("the producer is closed", false));
         }

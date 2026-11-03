@@ -467,7 +467,32 @@ public final class MyClient implements AutoCloseable {
         return submitOp(op);
     }
 
+    /** Every statement is a CLIENT span ({@code my.query}, {@code my.stream}), child of the calling thread's current span, with the database attributes. */
     private CompletableFuture<MyResult> submitOp(Op op) {
+        if (op.sql == null) {
+            return submitOp0(op);
+        }
+        io.hydrangea.trace.Span span = io.hydrangea.trace.Tracing.start(op.kind == Kind.STREAM ? "my.stream" : "my.query", io.hydrangea.trace.Span.Kind.CLIENT);
+        if (span.isRecording()) {
+            span.attribute("db.system.name", "mysql").attribute("db.namespace", config.database()).attribute("server.address", config.host())
+                    .attribute("server.port", config.port()).attribute("db.query.text", op.sql.length() > 1024 ? op.sql.substring(0, 1024) : op.sql);
+        }
+        CompletableFuture<MyResult> f = submitOp0(op);
+        CompletableFuture<?> done = op.future != null ? op.future : op.streamReady;
+        if (done == null) {
+            span.end();
+        } else {
+            done.whenComplete((r, err) -> {
+                if (err != null) {
+                    span.error(err instanceof java.util.concurrent.CompletionException && err.getCause() != null ? err.getCause() : err);
+                }
+                span.end();
+            });
+        }
+        return f;
+    }
+
+    private CompletableFuture<MyResult> submitOp0(Op op) {
         if (op.timeoutNanos == 0 && config.queryTimeout() != null && (op.kind == Kind.TEXT || op.kind == Kind.PREPARED || op.kind == Kind.STREAM) && op.sql != null) {
             op.timeoutNanos = config.queryTimeout().toNanos();
         }

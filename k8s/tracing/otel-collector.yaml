@@ -1,0 +1,71 @@
+# OpenTelemetry Collector: receives OTLP from the services (gRPC 4317, HTTP 4318), batches, and forwards to Jaeger (jaeger.yaml).
+# Point the services at it with OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317. Swap the `otlp/jaeger` exporter for Tempo,
+# Datadog, Honeycomb ... without touching the services.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  labels: {app.kubernetes.io/part-of: hydrangea-tracing}
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc: {endpoint: 0.0.0.0:4317}
+          http: {endpoint: 0.0.0.0:4318}
+    processors:
+      memory_limiter: {check_interval: 1s, limit_mib: 200, spike_limit_mib: 50}
+      batch: {timeout: 2s, send_batch_size: 512}
+      # tail_sampling can go here later: keep every trace with an error or over 500 ms, 10% of the rest
+    exporters:
+      otlp/jaeger:
+        endpoint: jaeger:4317
+        tls: {insecure: true}
+      debug: {verbosity: basic}          # one line per batch in the collector's log; set to `detailed` to see every span
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlp/jaeger, debug]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  labels: {app.kubernetes.io/part-of: hydrangea-tracing, app: otel-collector}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: otel-collector}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/part-of: hydrangea-tracing, app: otel-collector}
+    spec:
+      containers:
+        - name: collector
+          image: otel/opentelemetry-collector-contrib:0.115.1
+          args: ["--config=/conf/config.yaml"]
+          ports:
+            - {name: otlp-grpc, containerPort: 4317}
+            - {name: otlp-http, containerPort: 4318}
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: "1", memory: 256Mi}
+          readinessProbe: {httpGet: {path: /, port: 13133}, initialDelaySeconds: 3, periodSeconds: 10}
+          volumeMounts: [{name: conf, mountPath: /conf}]
+      volumes:
+        - name: conf
+          configMap: {name: otel-collector-config}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  labels: {app.kubernetes.io/part-of: hydrangea-tracing}
+spec:
+  type: ClusterIP
+  selector: {app: otel-collector}
+  ports:
+    - {name: otlp-grpc, port: 4317, targetPort: 4317}
+    - {name: otlp-http, port: 4318, targetPort: 4318}

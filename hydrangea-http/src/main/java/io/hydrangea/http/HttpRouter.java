@@ -1,12 +1,14 @@
 package io.hydrangea.http;
 
 import io.hydrangea.log.LogContext;
+import io.hydrangea.trace.Span;
+import io.hydrangea.trace.SpanContext;
+import io.hydrangea.trace.Tracing;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Maps method + path pattern to routes and exposes path variables and request parameters.
@@ -38,14 +40,18 @@ import java.util.concurrent.ThreadLocalRandom;
  * safe, but a request may see either the old or the new table).
  * Routes run on the event loop: never block in them, use the {@code *Async} variants for slow work.
  * <p>
- * <b>Trace id.</b> Every request gets one: the trace id of a {@code traceparent} header (W3C Trace Context), else the value of
- * {@code X-Trace-Id} or {@code X-Request-Id} when it is 1–64 characters of {@code [A-Za-z0-9._-]}, else 32 random hex digits.
- * The route runs inside a {@link LogContext} scope holding it as {@code trace_id}, so every log line the route writes carries it
- * (text output: {@code trace_id=...}; JSON: a {@code "trace_id"} key), the response gets an {@code X-Trace-Id} header, and the
- * access log entry has it. The scope covers the route's own execution on the event loop; work that continues elsewhere (an
- * {@code *Async} route completing on another thread, a callback) reopens it with {@link RouteRequest#traceId()} or
- * {@link LogContext#wrap}. {@link #tracing(boolean)} turns this off. Responses are per request: a response object reused across
- * requests would keep the first request's header.
+ * <b>Tracing.</b> Every request is served inside a {@link Span} of kind SERVER: its parent is the span in the client's
+ * {@code traceparent} header (W3C Trace Context) when there is a usable one, otherwise the span starts a new trace. The span is
+ * named {@code METHOD pattern} once the route is matched ({@code GET /users/{id}}), carries {@code http.request.method},
+ * {@code url.path}, {@code http.route} and {@code http.response.status_code}, is marked failed on an exception or a 5xx, and
+ * ends when the route's response is ready. While the route runs it is the thread's current span (so a client call made in it
+ * becomes a child) and the {@link LogContext} holds {@code trace_id} and {@code span_id} (so the route's log lines carry them).
+ * The response gets an {@code X-Trace-Id} header with the trace id; a usable {@code X-Request-Id} (1–64 characters of
+ * {@code [A-Za-z0-9._-]}) sent by the client is logged as {@code request_id}. Spans are recorded only when a
+ * {@link io.hydrangea.trace.TraceSink} is bound ({@link Tracing#bindTo}); without one, ids still flow. Work that continues
+ * elsewhere (an {@code *Async} route completing on another thread) reopens the span with {@link RouteRequest#span()} and
+ * {@link Span#makeCurrent}. {@link #tracing(boolean)} turns all of this off. Responses are per request: a response object reused
+ * across requests would keep the first request's header.
  */
 public final class HttpRouter implements HttpHandler {
 
@@ -103,7 +109,11 @@ public final class HttpRouter implements HttpHandler {
     private volatile boolean tracing = true;
 
     /** The context key the trace id is logged under. */
-    public static final String TRACE_KEY = "trace_id";
+    public static final String TRACE_KEY = Tracing.TRACE_ID;
+    /** The context key the span id is logged under. */
+    public static final String SPAN_KEY = Tracing.SPAN_ID;
+    /** The context key a client's {@code X-Request-Id} is logged under. */
+    public static final String REQUEST_ID_KEY = "request_id";
     /** The response header that carries the trace id back to the client. */
     public static final String TRACE_HEADER = "X-Trace-Id";
 
@@ -240,41 +250,52 @@ public final class HttpRouter implements HttpHandler {
         if (!tracing) {
             return dispatch(request, body, null);
         }
-        String traceId = traceId(request.headers());
-        try (LogContext.Scope ignored = LogContext.with(TRACE_KEY, traceId)) {
-            return dispatch(request, body, traceId).thenApply(r -> {
-                if (r.headers().get(TRACE_HEADER) == null) {
-                    r.header(TRACE_HEADER, traceId);
+        Headers headers = request.headers();
+        Span span = Tracing.start(request.method(), Span.Kind.SERVER, SpanContext.parse(headers.get("traceparent")));
+        SpanContext context = span.context();
+        if (span.isRecording()) {
+            span.attribute("http.request.method", request.method()).attribute("url.path", request.path());
+        }
+        String requestId = requestId(headers);
+        try (Span.Scope ignored = span.makeCurrent();
+             LogContext.Scope trace = LogContext.with(TRACE_KEY, context.traceId());
+             LogContext.Scope spanScope = LogContext.with(SPAN_KEY, context.spanId());
+             LogContext.Scope reqScope = requestId == null ? null : LogContext.with(REQUEST_ID_KEY, requestId)) {
+            CompletionStage<HttpResponse> stage;
+            try {
+                stage = dispatch(request, body, span);
+            } catch (Throwable t) {
+                span.error(t);
+                span.end();
+                throw t;
+            }
+            return stage.whenComplete((r, err) -> {
+                if (err != null) {
+                    span.error(err instanceof CompletionException && err.getCause() != null ? err.getCause() : err);
+                } else {
+                    if (r.headers().get(TRACE_HEADER) == null) {
+                        r.header(TRACE_HEADER, context.traceId());
+                    }
+                    if (span.isRecording()) {
+                        span.attribute("http.response.status_code", r.status());
+                        if (r.status() >= 500) {
+                            span.error("HTTP " + r.status());
+                        }
+                    }
                 }
-                return r;
+                span.end();
             });
         }
     }
 
-    /** The request's trace id: from the client when it sent a usable one, else new. */
-    static String traceId(Headers headers) {
-        String parent = headers.get("traceparent");
-        if (parent != null) {
-            // version-traceid-parentid-flags; the trace id is 32 hex digits and not all zeros
-            int a = parent.indexOf('-');
-            int b = a < 0 ? -1 : parent.indexOf('-', a + 1);
-            if (a == 2 && b == 35 && usable(parent, 3, 35) && !parent.startsWith("00000000000000000000000000000000", 3)) {
-                return parent.substring(3, 35);
-            }
-        }
-        String given = headers.get(TRACE_HEADER);
-        if (given == null) {
-            given = headers.get("X-Request-Id");
-        }
-        if (given != null && !given.isEmpty() && given.length() <= 64 && usable(given, 0, given.length())) {
-            return given;
-        }
-        ThreadLocalRandom random = ThreadLocalRandom.current();
-        return String.format("%016x%016x", random.nextLong(), random.nextLong());
+    /** The client's {@code X-Request-Id} when it is safe to log, else {@code null}. */
+    static String requestId(Headers headers) {
+        String given = headers.get("X-Request-Id");
+        return given != null && !given.isEmpty() && given.length() <= 64 && usable(given) ? given : null;
     }
 
-    private static boolean usable(String s, int from, int to) {
-        for (int i = from; i < to; i++) {
+    private static boolean usable(String s) {
+        for (int i = 0; i < s.length(); i++) {
             char c = s.charAt(i);
             boolean ok = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '-' || c == '_' || c == '.';
             if (!ok) {
@@ -284,7 +305,7 @@ public final class HttpRouter implements HttpHandler {
         return true;
     }
 
-    private CompletionStage<HttpResponse> dispatch(HttpRequest request, RequestBodyStream body, String traceId) throws Exception {
+    private CompletionStage<HttpResponse> dispatch(HttpRequest request, RequestBodyStream body, Span span) throws Exception {
         String path = request.path();
         if (!path.startsWith("/")) {
             return done(HttpResponse.status(400).text("Bad Request"));
@@ -294,7 +315,10 @@ public final class HttpRouter implements HttpHandler {
             Lookup lookup = new Lookup(decoded, request.method());
             Entry e = search(root, 0, lookup);
             if (e != null) {
-                RouteRequest rr = new RouteRequest(request, variables(e, decoded), traceId);
+                if (span != null && span.isRecording()) {
+                    span.name(request.method() + " " + e.pattern).attribute("http.route", e.pattern);
+                }
+                RouteRequest rr = new RouteRequest(request, variables(e, decoded), span);
                 if (e.stream != null) {
                     return guard(e.stream.handle(rr, body != null ? body : EmptyBody.INSTANCE));
                 }
@@ -306,7 +330,7 @@ public final class HttpRouter implements HttpHandler {
                 }
                 return done(HttpResponse.status(405).header("Allow", String.join(", ", lookup.allowed)).text("Method Not Allowed"));
             }
-            return guard(notFound.handle(new RouteRequest(request, Map.of(), traceId)));
+            return guard(notFound.handle(new RouteRequest(request, Map.of(), span)));
         } catch (HttpStatusException e) {
             return done(toResponse(e));
         }

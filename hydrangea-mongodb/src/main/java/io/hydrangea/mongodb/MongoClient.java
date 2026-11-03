@@ -332,8 +332,26 @@ public final class MongoClient implements AutoCloseable {
         return runOn(db, command, kind).thenApply(Answer::reply);
     }
 
+    /** Every command is a CLIENT span named after the command and its collection ({@code find products}), child of the calling thread's current span. */
     private CompletableFuture<Answer> runOn(String db, Map<String, Object> command, Kind kind) {
         CompletableFuture<Answer> out = new CompletableFuture<>();
+        String op = command.isEmpty() ? "command" : command.keySet().iterator().next();
+        Object target = command.isEmpty() ? null : command.get(op);
+        String collection = target instanceof String s ? s : null;
+        io.hydrangea.trace.Span span = io.hydrangea.trace.Tracing.start(collection == null ? op : op + " " + collection, io.hydrangea.trace.Span.Kind.CLIENT);
+        if (span.isRecording()) {
+            span.attribute("db.system.name", "mongodb").attribute("db.namespace", db).attribute("db.operation.name", op)
+                    .attribute("server.address", String.join(",", config.hosts()));
+            if (collection != null) {
+                span.attribute("db.collection.name", collection);
+            }
+            out.whenComplete((r, err) -> {
+                if (err != null) {
+                    span.error(err instanceof CompletionException && err.getCause() != null ? err.getCause() : err);
+                }
+                span.end();
+            });
+        }
         attempt(db, command, kind, false, out);
         return out;
     }

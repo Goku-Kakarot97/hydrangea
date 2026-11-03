@@ -217,6 +217,29 @@ public final class MqttClient implements AutoCloseable {
      * a packet over its maximum size. A PUBACK or PUBREC with a failure reason code (not authorized, quota exceeded...) fails the future with that code.
      */
     public CompletableFuture<Void> publish(String topic, byte[] payload, QoS qos, boolean retain, MqttProperties properties) {
+        // a PRODUCER span, child of the calling thread's current span; with MQTT 5 the message carries traceparent as a user property (MQTT 3 has nowhere to put it)
+        io.hydrangea.trace.Span span = io.hydrangea.trace.Tracing.start(String.valueOf(topic) + " publish", io.hydrangea.trace.Span.Kind.PRODUCER);
+        if (span.isRecording()) {
+            span.attribute("messaging.system", "mqtt").attribute("messaging.destination.name", String.valueOf(topic)).attribute("messaging.operation.type", "send")
+                    .attribute("messaging.mqtt.qos", qos == null ? -1 : qos.level());
+        }
+        if (v5) {
+            MqttProperties p = properties == null ? MqttProperties.NONE : properties;
+            if (p.userProperties().stream().noneMatch(u -> "traceparent".equals(u.name()))) {
+                properties = p.withUserProperty("traceparent", span.context().traceparent());
+            }
+        }
+        CompletableFuture<Void> f = publish0(topic, payload, qos, retain, properties);
+        f.whenComplete((r, err) -> {
+            if (err != null) {
+                span.error(err instanceof java.util.concurrent.CompletionException && err.getCause() != null ? err.getCause() : err);
+            }
+            span.end();
+        });
+        return f;
+    }
+
+    private CompletableFuture<Void> publish0(String topic, byte[] payload, QoS qos, boolean retain, MqttProperties properties) {
         byte[] props = null;
         Long expiry = null;
         try {

@@ -110,13 +110,70 @@ public final class HttpClient implements AutoCloseable {
         return send(ClientRequest.post(url).body(body));
     }
 
-    /** Sends the request. The future fails with {@link IOException} subtypes (e.g. {@link SocketTimeoutException}). */
+    /**
+     * Sends the request. The future fails with {@link IOException} subtypes (e.g. {@link SocketTimeoutException}).
+     * <p>
+     * The request is a CLIENT {@link io.hydrangea.trace.Span}, child of the calling thread's current span (a route being served,
+     * for instance), and carries a {@code traceparent} header for it, so the service called can join the trace. The span ends
+     * with the response head (or the failure). A request that already has a {@code traceparent} header belongs to a span its
+     * caller manages (a gRPC call, for instance): it is sent as is and gets no span of its own.
+     */
     public CompletableFuture<ClientResponse> send(ClientRequest request) {
         if (closed) {
             return CompletableFuture.failedFuture(new IOException("client is closed"));
         }
+        io.hydrangea.trace.Span span = traceStart(request);
+        request = withTraceparent(request, span);
         Exchange ex = new Exchange(request, group.next());
-        return start(ex, request) ? ex.result : CompletableFuture.failedFuture(new IOException("client is closed"));
+        if (!start(ex, request)) {
+            ex.fail(new IOException("client is closed"));
+        }
+        return traceEnd(ex.result, span);
+    }
+
+    /** The request with a {@code traceparent} for the span ({@link ClientRequest} is immutable); unchanged when there is no span. */
+    private static ClientRequest withTraceparent(ClientRequest request, io.hydrangea.trace.Span span) {
+        return span == null ? request : request.header("traceparent", span.context().traceparent());
+    }
+
+    /** The request's span, or {@code null} when the caller already set {@code traceparent} and so manages the span itself. */
+    private static io.hydrangea.trace.Span traceStart(ClientRequest request) {
+        if (request.headers().get("traceparent") != null) {
+            return null;
+        }
+        io.hydrangea.trace.Span span = io.hydrangea.trace.Tracing.start("HTTP " + request.method(), io.hydrangea.trace.Span.Kind.CLIENT);
+        if (span.isRecording()) {
+            java.net.URI uri = request.uri();
+            span.attribute("http.request.method", request.method());
+            if (uri.getHost() != null) {
+                span.attribute("server.address", uri.getHost());
+                if (uri.getPort() > 0) {
+                    span.attribute("server.port", uri.getPort());
+                }
+            }
+            if (uri.getPath() != null) {
+                span.attribute("url.path", uri.getPath());
+            }
+        }
+        return span;
+    }
+
+    private static CompletableFuture<ClientResponse> traceEnd(CompletableFuture<ClientResponse> result, io.hydrangea.trace.Span span) {
+        if (span == null) {
+            return result;
+        }
+        result.whenComplete((resp, err) -> {
+            if (err != null) {
+                span.error(err instanceof java.util.concurrent.CompletionException && err.getCause() != null ? err.getCause() : err);
+            } else if (span.isRecording()) {
+                span.attribute("http.response.status_code", resp.status());
+                if (resp.status() >= 500) {
+                    span.error("HTTP " + resp.status());
+                }
+            }
+            span.end();
+        });
+        return result;
     }
 
     /**
@@ -131,12 +188,15 @@ public final class HttpClient implements AutoCloseable {
      * </ul>
      */
     public StreamHandle stream(ClientRequest request, BodyListener listener) {
+        io.hydrangea.trace.Span span = traceStart(request);
+        request = withTraceparent(request, span);
         Exchange ex = new Exchange(request, group.next());
         ex.stream = listener;
         StreamHandle handle = new StreamHandle(ex);
         if (closed || !start(ex, request)) {
             ex.fail(new IOException("client is closed"));
         }
+        traceEnd(ex.result, span);
         return handle;
     }
 

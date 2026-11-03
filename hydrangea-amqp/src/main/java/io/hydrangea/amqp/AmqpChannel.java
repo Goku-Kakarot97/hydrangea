@@ -368,6 +368,20 @@ public final class AmqpChannel {
      */
     public CompletableFuture<Void> basicPublish(String exchange, String routingKey, boolean mandatory, BasicProperties properties, byte[] body) {
         BasicProperties props = properties == null ? BasicProperties.EMPTY : properties;
+        // a PRODUCER span, child of the calling thread's current span; the message carries traceparent in its headers unless the caller set one (Delivery.startProcessing continues it)
+        io.hydrangea.trace.Span span = io.hydrangea.trace.Tracing.start((exchange.isEmpty() ? routingKey : exchange) + " publish", io.hydrangea.trace.Span.Kind.PRODUCER);
+        if (span.isRecording()) {
+            span.attribute("messaging.system", "rabbitmq").attribute("messaging.destination.name", exchange).attribute("messaging.rabbitmq.destination.routing_key", routingKey)
+                    .attribute("messaging.operation.type", "send");
+        }
+        if (props.headers() == null || !props.headers().containsKey("traceparent")) {
+            Map<String, Object> h = new java.util.LinkedHashMap<>();
+            if (props.headers() != null) {
+                h.putAll(props.headers());
+            }
+            h.put("traceparent", span.context().traceparent());
+            props = props.withHeaders(h);
+        }
         int max = conn.frameMax() - 8;
         Wire.Writer method = new Wire.Writer(64).shortInt(60).shortInt(40).shortInt(0).shortStr(exchange).shortStr(routingKey).bits(mandatory, false);
         Wire.Writer header = new Wire.Writer(64).shortInt(60).shortInt(0).longLong(body.length);
@@ -402,6 +416,12 @@ public final class AmqpChannel {
             } else {
                 f.complete(null);
             }
+        });
+        f.whenComplete((r, err) -> {
+            if (err != null) {
+                span.error(err instanceof java.util.concurrent.CompletionException && err.getCause() != null ? err.getCause() : err);
+            }
+            span.end();
         });
         return f;
     }

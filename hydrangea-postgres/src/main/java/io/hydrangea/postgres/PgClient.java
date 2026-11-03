@@ -336,9 +336,36 @@ public final class PgClient implements AutoCloseable {
         Op op = new Op(false, sql, oids, values);
         op.params = kept;
         op.timeoutNanos = timeout == null ? 0 : timeout.toNanos();
+        io.hydrangea.trace.Span span = traceStart("pg.query", sql);
         submit(op);
         @SuppressWarnings("unchecked")
         CompletableFuture<PgResult> f = (CompletableFuture<PgResult>) (CompletableFuture<?>) op.future;
+        return traceEnd(f, span);
+    }
+
+    /**
+     * A CLIENT span for one statement, child of the calling thread's current span (the route being served, for instance), with the
+     * OpenTelemetry database attributes; the statement text is cut at 1024 characters. Recorded only when a sink is bound.
+     */
+    private io.hydrangea.trace.Span traceStart(String name, String sql) {
+        io.hydrangea.trace.Span span = io.hydrangea.trace.Tracing.start(name, io.hydrangea.trace.Span.Kind.CLIENT);
+        if (span.isRecording()) {
+            span.attribute("db.system.name", "postgresql")
+                    .attribute("db.namespace", config.database())
+                    .attribute("server.address", config.host())
+                    .attribute("server.port", config.port())
+                    .attribute("db.query.text", sql.length() > 1024 ? sql.substring(0, 1024) : sql);
+        }
+        return span;
+    }
+
+    private static <T> CompletableFuture<T> traceEnd(CompletableFuture<T> f, io.hydrangea.trace.Span span) {
+        f.whenComplete((r, err) -> {
+            if (err != null) {
+                span.error(err instanceof java.util.concurrent.CompletionException && err.getCause() != null ? err.getCause() : err);
+            }
+            span.end();
+        });
         return f;
     }
 
@@ -357,10 +384,11 @@ public final class PgClient implements AutoCloseable {
         }
         Op op = new Op(true, sql, null, null);
         op.timeoutNanos = timeout == null ? 0 : timeout.toNanos();
+        io.hydrangea.trace.Span span = traceStart("pg.execute", sql);
         submit(op);
         @SuppressWarnings("unchecked")
         CompletableFuture<List<PgResult>> f = (CompletableFuture<List<PgResult>>) (CompletableFuture<?>) op.future;
-        return f;
+        return traceEnd(f, span);
     }
 
     /**

@@ -56,6 +56,7 @@
         <module>hydrangea-elasticsearch</module>
         <module>hydrangea-mongodb</module>
         <module>hydrangea-micrometer</module>
+        <module>hydrangea-otlp</module>
          <module>hydrangea-examples</module>
     </modules>
 
@@ -65,7 +66,8 @@
     </properties>
 
     <!-- The libraries have no third-party dependencies (ArchitectureTest checks it): every module logs through hydrangea-log, which is JDK only;
-         external artifacts are JUnit, for tests, and Micrometer, in the hydrangea-micrometer module only (optional, nothing else uses it). -->
+         the only external artifacts are JUnit, for tests, and Micrometer in hydrangea-micrometer (an optional bridge, nothing else uses it);
+         hydrangea-otlp exports spans to an OpenTelemetry collector with the framework's own clients, no OpenTelemetry library. -->
     <dependencyManagement>
         <dependencies>
             <dependency>

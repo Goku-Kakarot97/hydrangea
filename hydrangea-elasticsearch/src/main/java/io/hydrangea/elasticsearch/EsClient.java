@@ -311,6 +311,20 @@ public final class EsClient implements AutoCloseable {
         long start = mDuration.begin();
         CompletableFuture<EsResponse> result = new CompletableFuture<>();
         Attempt a = new Attempt(method, target, body, contentType, encoding, result);
+        // one CLIENT span for the logical request however many nodes it takes; the HTTP requests carry its traceparent and get no span of their own
+        io.hydrangea.trace.Span span = io.hydrangea.trace.Tracing.start(method + " " + path, io.hydrangea.trace.Span.Kind.CLIENT);
+        a.traceparent = span.context().traceparent();
+        if (span.isRecording()) {
+            span.attribute("db.system.name", "elasticsearch").attribute("http.request.method", method).attribute("url.path", path);
+            result.whenComplete((r, err) -> {
+                if (err != null) {
+                    span.error(err instanceof CompletionException && err.getCause() != null ? err.getCause() : err);
+                } else if (r != null) {
+                    span.attribute("http.response.status_code", r.status());
+                }
+                span.end();
+            });
+        }
         result.whenComplete((r, err) -> {
             mDuration.end(start);
             if (err == null) {
@@ -349,6 +363,7 @@ public final class EsClient implements AutoCloseable {
         final byte[] body;
         final CompletableFuture<EsResponse> result;
         int[] acceptedErrors;
+        String traceparent;
         volatile CompletableFuture<ClientResponse> inFlight;
 
         Attempt(String method, String target, byte[] body, String contentType, String encoding, CompletableFuture<EsResponse> result) {
@@ -369,7 +384,7 @@ public final class EsClient implements AutoCloseable {
                 return;
             }
             int node = pickNode();
-            ClientRequest req = ClientRequest.of(method, nodes.get(node) + target).header("Accept", JSON);
+            ClientRequest req = ClientRequest.of(method, nodes.get(node) + target).header("Accept", JSON).header("traceparent", traceparent);
             if (config.authorization() != null) {
                 req = req.header("Authorization", config.authorization());
             }
