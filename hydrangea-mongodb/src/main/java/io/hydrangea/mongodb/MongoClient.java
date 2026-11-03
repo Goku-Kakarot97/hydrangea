@@ -2,7 +2,7 @@ package io.hydrangea.mongodb;
 
 import io.hydrangea.EventLoopGroup;
 
-import java.lang.System.Logger;
+import io.hydrangea.log.Logger;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -43,7 +43,7 @@ import java.util.function.Function;
  */
 public final class MongoClient implements AutoCloseable {
 
-    private static final Logger LOG = System.getLogger(MongoClient.class.getName());
+    private static final Logger LOG = Logger.get(MongoClient.class);
     private static final Duration TRANSACTION_RETRY_LIMIT = Duration.ofSeconds(120);
 
     /** What a command is, for retrying: a read is sent again after a failover; a write only with a transaction number; a commit by its own rule; nothing else. */
@@ -427,7 +427,7 @@ public final class MongoClient implements AutoCloseable {
                 String setName = hello.get("setName") instanceof String s ? s : null;
                 if (setName != null) {
                     if (config.replicaSet() != null && !config.replicaSet().equals(setName)) {
-                        LOG.log(Logger.Level.WARNING, "{0} belongs to replica set {1}, not {2}: ignored", hosts.get(i), setName, config.replicaSet());
+                        LOG.warn("{} belongs to replica set {}, not {}: ignored", hosts.get(i), setName, config.replicaSet());
                         continue;
                     }
                     replicaSetMode = true;
@@ -465,7 +465,7 @@ public final class MongoClient implements AutoCloseable {
                 if (before != null && !before.equals(found)) {
                     mPrimaryChanges.increment();
                 }
-                LOG.log(Logger.Level.DEBUG, "MongoDB primary: {0}", found);
+                LOG.debug("MongoDB primary: {}", found);
                 result.complete(found);
                 return;
             }
@@ -490,7 +490,7 @@ public final class MongoClient implements AutoCloseable {
                 return;
             }
             primary = null;
-            LOG.log(Logger.Level.INFO, "MongoDB primary {0} lost ({1}): looking for the new one", address, why.getMessage());
+            LOG.info("MongoDB primary {} lost ({}): looking for the new one", address, why.getMessage());
         }
         for (Slot s : slots) {
             CompletableFuture<MongoConnection> f = s.conn;

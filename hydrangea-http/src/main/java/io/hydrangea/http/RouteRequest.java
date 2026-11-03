@@ -24,15 +24,29 @@ public final class RouteRequest {
 
     private final HttpRequest request;
     private final Map<String, String> pathVariables;
+    private final String traceId;
     private Map<String, List<String>> params; // lazy
 
     RouteRequest(HttpRequest request, Map<String, String> pathVariables) {
+        this(request, pathVariables, null);
+    }
+
+    RouteRequest(HttpRequest request, Map<String, String> pathVariables, String traceId) {
         this.request = request;
         this.pathVariables = pathVariables;
+        this.traceId = traceId;
     }
 
     public HttpRequest request() {
         return request;
+    }
+
+    /**
+     * The request's trace id (see {@link HttpRouter}): what the route's log lines carry, to reopen in a callback with
+     * {@code LogContext.with(HttpRouter.TRACE_KEY, r.traceId())}. {@code null} when tracing is off.
+     */
+    public String traceId() {
+        return traceId;
     }
 
     public String method() {

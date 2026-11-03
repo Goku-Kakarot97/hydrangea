@@ -13,7 +13,7 @@ import io.hydrangea.pipeline.Stage;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.lang.System.Logger;
+import io.hydrangea.log.Logger;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -49,7 +49,7 @@ import java.util.concurrent.TimeUnit;
  */
 final class Http2ServerStage implements Stage {
 
-    private static final Logger LOG = System.getLogger(Http2ServerStage.class.getName());
+    private static final Logger LOG = Logger.get(Http2ServerStage.class);
 
     static final byte[] PREFACE = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n".getBytes(StandardCharsets.US_ASCII);
 
@@ -239,7 +239,7 @@ final class Http2ServerStage implements Stage {
         try {
             parse(ctx);
         } catch (RuntimeException e) {
-            LOG.log(Logger.Level.WARNING, "http/2 handling failed", e);
+            LOG.warn("http/2 handling failed", e);
             connectionError(ctx, INTERNAL_ERROR, "internal error");
         }
     }
@@ -264,7 +264,7 @@ final class Http2ServerStage implements Stage {
                 try {
                     s.tunnel.onDrain(s.conn);
                 } catch (Exception e) {
-                    LOG.log(Logger.Level.DEBUG, "stream drain failed", e);
+                    LOG.debug("stream drain failed", e);
                 }
             }
         }
@@ -674,7 +674,7 @@ final class Http2ServerStage implements Stage {
                     s.tunnel.onRead(s.conn, ByteBuffer.wrap(p, off, n).slice());
                 }
             } catch (Exception e) {
-                LOG.log(Logger.Level.WARNING, "stream " + sid + " failed while handling data", e);
+                LOG.warn("stream " + sid + " failed while handling data", e);
                 streamError(ctx, sid, INTERNAL_ERROR);
                 return;
             }
@@ -1102,7 +1102,7 @@ final class Http2ServerStage implements Stage {
         try {
             result = handler.handle(request);
         } catch (Throwable t) {
-            LOG.log(Logger.Level.WARNING, "handler failed for " + s.path, t);
+            LOG.warn("handler failed for " + s.path, t);
             result = CompletableFuture.completedFuture(HttpResponse.status(500).text("Internal Server Error"));
         }
         deliverWhenDone(ctx, s, result);
@@ -1119,7 +1119,7 @@ final class Http2ServerStage implements Stage {
                 if (err != null || r == null) {
                     Throwable cause = err instanceof java.util.concurrent.CompletionException ce && ce.getCause() != null ? ce.getCause() : err;
                     if (cause != null) {
-                        LOG.log(Logger.Level.WARNING, "handler failed for " + s.path, cause);
+                        LOG.warn("handler failed for " + s.path, cause);
                     }
                     r = HttpResponse.status(500).text("Internal Server Error");
                 }
@@ -1164,7 +1164,7 @@ final class Http2ServerStage implements Stage {
         if (log != null) {
             try {
                 log.log(new AccessLog.Entry(ctx.connection().remoteAddress(), s.method, s.path, "HTTP/2", status, s.headOnly ? 0 : body.length,
-                        Duration.ofNanos(System.nanoTime() - s.startNanos), s.userAgent));
+                        Duration.ofNanos(System.nanoTime() - s.startNanos), s.userAgent, r.headers().get(HttpRouter.TRACE_HEADER)));
             } catch (Throwable ignored) {
                 // a failing logger must not break request handling
             }
@@ -1314,7 +1314,7 @@ final class Http2ServerStage implements Stage {
                 peerFinishedTunnel(ctx, s);
             }
         } catch (Exception e) {
-            LOG.log(Logger.Level.WARNING, "taking over stream " + s.id + " failed", e);
+            LOG.warn("taking over stream " + s.id + " failed", e);
             streamError(ctx, s.id, INTERNAL_ERROR);
         }
     }
@@ -1328,7 +1328,7 @@ final class Http2ServerStage implements Stage {
             try {
                 s.halfClose.onPeerHalfClose();
             } catch (Throwable t) {
-                LOG.log(Logger.Level.WARNING, "half-close callback failed for stream " + s.id, t);
+                LOG.warn("half-close callback failed for stream " + s.id, t);
                 streamError(ctx, s.id, INTERNAL_ERROR);
             }
             return;
@@ -1347,7 +1347,7 @@ final class Http2ServerStage implements Stage {
         try {
             s.tunnel.onClose(s.conn, cause);
         } catch (Throwable t) {
-            LOG.log(Logger.Level.DEBUG, "stream close callback failed", t);
+            LOG.debug("stream close callback failed", t);
         } finally {
             s.closeFuture.complete(null);
         }
@@ -1545,7 +1545,7 @@ final class Http2ServerStage implements Stage {
         try {
             return handler.wantsStream(new HttpRequest(s.method, s.path, "HTTP/2", s.headers, new byte[0]));
         } catch (Throwable t) {
-            LOG.log(Logger.Level.WARNING, "wantsStream failed for " + s.path, t);
+            LOG.warn("wantsStream failed for " + s.path, t);
             return false;
         }
     }
@@ -1556,7 +1556,7 @@ final class Http2ServerStage implements Stage {
         try {
             wanted = handler.wantsStreamingBody(head);
         } catch (Throwable t) {
-            LOG.log(Logger.Level.WARNING, "wantsStreamingBody failed for " + s.path, t);
+            LOG.warn("wantsStreamingBody failed for " + s.path, t);
             wanted = false;
         }
         if (!wanted) {
@@ -1568,7 +1568,7 @@ final class Http2ServerStage implements Stage {
         try {
             result = handler.handleStreaming(head, sb);
         } catch (Throwable t) {
-            LOG.log(Logger.Level.WARNING, "streaming handler failed for " + s.path, t);
+            LOG.warn("streaming handler failed for " + s.path, t);
             result = CompletableFuture.completedFuture(HttpResponse.status(500).text("Internal Server Error"));
         }
         sb.registrationClosed = true;
@@ -1626,7 +1626,7 @@ final class Http2ServerStage implements Stage {
             try {
                 listener.onData(ByteBuffer.wrap(p, off, n).asReadOnlyBuffer(), this);
             } catch (Throwable t) {
-                LOG.log(Logger.Level.WARNING, "request body listener failed for " + s.path, t);
+                LOG.warn("request body listener failed for " + s.path, t);
                 ended = true;
                 streamError(ctx, s.id, INTERNAL_ERROR);
             }
@@ -1645,7 +1645,7 @@ final class Http2ServerStage implements Stage {
                 try {
                     listener.onComplete();
                 } catch (Throwable t) {
-                    LOG.log(Logger.Level.WARNING, "request body listener failed in onComplete", t);
+                    LOG.warn("request body listener failed in onComplete", t);
                     streamError(ctx, s.id, INTERNAL_ERROR);
                 }
             }
@@ -1880,7 +1880,7 @@ final class Http2ServerStage implements Stage {
                     try {
                         s.tunnel.onWritabilityChanged(s.conn);
                     } catch (Exception e) {
-                        LOG.log(Logger.Level.DEBUG, "writability callback failed", e);
+                        LOG.debug("writability callback failed", e);
                     }
                 }
             }
@@ -2028,7 +2028,7 @@ final class Http2ServerStage implements Stage {
         }
         dead = true;
         cancelTimers();
-        LOG.log(Logger.Level.DEBUG, "http/2 connection error {0}: {1}", code, why);
+        LOG.debug("http/2 connection error {}: {}", code, why);
         frame(ctx, GOAWAY, 0, 0, goaway(lastClientStreamId, code, why));
         abortAllStreams(ctx, new IOException("HTTP/2 connection error " + code + ": " + why));
         closeConnection(ctx, Duration.ofMillis(500));

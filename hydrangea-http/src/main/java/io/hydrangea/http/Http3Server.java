@@ -10,8 +10,7 @@ import io.hydrangea.quic.QuicServer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.lang.System.Logger;
-import java.lang.System.Logger.Level;
+import io.hydrangea.log.Logger;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class Http3Server implements AutoCloseable {
 
-    private static final Logger LOG = System.getLogger(Http3Server.class.getName());
+    private static final Logger LOG = Logger.get(Http3Server.class);
 
     // frame types
     private static final int DATA = 0x00, HEADERS = 0x01, CANCEL_PUSH = 0x03, SETTINGS = 0x04, PUSH_PROMISE = 0x05, GOAWAY = 0x07, MAX_PUSH_ID = 0x0d;
@@ -294,7 +293,7 @@ public final class Http3Server implements AutoCloseable {
         }
 
         void fail(H3Error e) {
-            LOG.log(Level.DEBUG, "http3 connection error {0}: {1}", Long.toHexString(e.code), e.getMessage());
+            LOG.debug("http3 connection error {}: {}", Long.toHexString(e.code), e.getMessage());
             qc.close(e.code, e.getMessage());
         }
 
@@ -320,7 +319,7 @@ public final class Http3Server implements AutoCloseable {
             } catch (H3Error e) {
                 fail(e);
             } catch (RuntimeException e) {
-                LOG.log(Level.WARNING, "http3 stream handling failed", e);
+                LOG.warn("http3 stream handling failed", e);
                 qc.close(H3_GENERAL_PROTOCOL_ERROR, "internal error");
             }
         }
@@ -669,7 +668,7 @@ public final class Http3Server implements AutoCloseable {
                 }
                 stage = handler.handle(request);
             } catch (Throwable t) {
-                LOG.log(Level.DEBUG, "http3 handler failed", t);
+                LOG.debug("http3 handler failed", t);
                 respondError(500, "Internal Server Error");
                 return;
             }
@@ -677,7 +676,7 @@ public final class Http3Server implements AutoCloseable {
             stage.whenComplete((resp, err) -> {
                 if (err != null || resp == null) {
                     if (err != null) {
-                        LOG.log(Level.DEBUG, "http3 handler failed", err);
+                        LOG.debug("http3 handler failed", err);
                     }
                     send(HttpResponse.status(500).text("Internal Server Error"), method.equals("HEAD"));
                 } else if (resp.takeover() != null || resp.isHeadDeferred()) {

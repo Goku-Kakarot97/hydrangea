@@ -41,7 +41,7 @@ Or straight from a tag through [JitPack](https://jitpack.io/#Goku-Kakarot97/hydr
 
 | Module | What it holds | Depends on |
 |---|---|---|
-| `hydrangea-core` | `EventLoop`, `EventLoopGroup`, `Server`, `Client`, `Connection`, `UdpSocket`, `BufferPool`, codecs, `Pipeline`/`Stage`, `TlsStage`, metrics, back-off | – |
+| `hydrangea-core` | `EventLoop`, `EventLoopGroup`, `Server`, `Client`, `Connection`, `UdpSocket`, `BufferPool`, codecs, `Pipeline`/`Stage`, `TlsStage`, metrics, back-off | log |
 | `hydrangea-http` | HTTP/1.1, HTTP/2 (HPACK) and HTTP/3 servers and clients, `HttpRouter`, WebSocket, Server-Sent Events, streaming uploads/downloads | core, quic |
 | `hydrangea-grpc` | gRPC server and client (unary, server/client/bidi streaming, deadlines, interceptors) | core, http |
 | `hydrangea-quic` | QUIC v1 server with its own minimal TLS 1.3 (experimental; the base of HTTP/3) | core |
@@ -54,7 +54,7 @@ Or straight from a tag through [JitPack](https://jitpack.io/#Goku-Kakarot97/hydr
 | `hydrangea-sql` | The interfaces the two database clients share (`SqlPool`, `SqlClient`, `SqlResult`, `SqlRow`, `SqlException`) | – |
 | `hydrangea-mongodb` | MongoDB client (OP_MSG wire protocol, own BSON): pipelined commands over N shared connections, replica-set discovery and failover, retryable writes, multi-document transactions, SCRAM-SHA-256/SHA-1, TLS, find/aggregate cursors, insert/update/delete/findAndModify, indexes, records in and out, `mongodb://` URIs | core, codec |
 | `hydrangea-elasticsearch` | Elasticsearch / OpenSearch client over the HTTP client: documents, search, scroll, count, bulk with a batching indexer (size/byte/time flush, 429 retry, back-pressure), node failover, gzip both ways, records in and out by reflection, raw requests for the rest, a strict JSON reader/writer | core, http |
-| `hydrangea-log` | Logging: lock-free async ring buffer, a chain of stages (filter, redact, enrich, append), handlers registered per level, `{}` placeholders and structured fields, line or JSON output, rolling files, `hydrangea-log.properties`; the `System.Logger` backend every other module logs through | – |
+| `hydrangea-log` | Logging: lock-free async ring buffer, a chain of stages (filter, redact, enrich, append), handlers registered per level, `{}` placeholders and structured fields, per-thread context with explicit propagation, line or JSON output, rolling files, `hydrangea-log.properties`, a `System.Logger` backend; what every other module logs through | – |
 | `hydrangea-micrometer` | `MetricsSink` for Micrometer (Prometheus, OTLP, Datadog, JMX…) | core |
 | `hydrangea-examples` | Runnable examples and the cross-module tests | all |
 
@@ -179,7 +179,7 @@ Recording latency costs 39 ns per call when a sink is bound and 7 ns when none i
 
 ## Logging
 
-Every module logs through the JDK's `System.Logger`, so it works with whatever backend you already have. `hydrangea-log` is a backend of its own, written after the run of logging CVEs with the opposite design: a message is text and nothing else (no `${...}` lookups, no JNDI, no format directives), the configuration is data (no class names, no URLs, nothing fetched), and control characters are escaped so a user-supplied string cannot forge a second log line or drive a terminal. Put it on the class path and it is picked up through `META-INF/services`; the module itself has no dependency and nothing depends on it.
+Every module logs through `hydrangea-log`, a library of this repository written after the run of logging CVEs with the opposite design: a message is text and nothing else (no `${...}` lookups, no JNDI, no format directives), the configuration is data (no class names, no URLs, nothing fetched), and control characters are escaped so a user-supplied string cannot forge a second log line or drive a terminal. It depends on the JDK only, sits at the bottom of the module graph, and is also a `System.Logger` backend (through `META-INF/services`) for code that logs through the JDK facade. To send the framework's lines elsewhere, add a stage: `Appender.to(line -> ...)` or a `LogStage` that hands the event to another library.
 
 ```java
 private static final Logger log = Logger.get(OrderService.class);
@@ -197,6 +197,8 @@ Log.configure()
 Log.on(Level.ERROR, (e, next) -> pager.alert(e));                      // registered per level: ERROR and above, whatever the main chain did
 Log.onExactly(Level.WARN, LogStage.each(e -> warnings.increment()));
 ```
+
+Context is per thread and never crosses one on its own: `LogContext.wrap(runnable)`, `wrap(executor)` or `capture()`/`attach()` carry it over explicitly. `HttpRouter` opens a scope per request with a `trace_id` (taken from `traceparent`, `X-Trace-Id` or `X-Request-Id` when the client sent a usable one, otherwise 32 random hex digits), so a route's log lines carry it, the response returns it as `X-Trace-Id`, the access log records it, and `RouteRequest.traceId()` lets an async route reopen the scope in its callback.
 
 A disabled call is one volatile read (1 ns). An enabled one renders the message on the caller's thread, then hands the event to a lock-free ring buffer; one daemon thread runs the chain, formats into a reused buffer and flushes the appenders once per batch. On this laptop, 2 million `info` calls with two arguments to a file: 144 ns each on one thread, 190 ns with four threads logging at once (5–7 million lines/s), against 2.2 µs synchronous and 7.7 µs for `java.util.logging`; in the same harness Log4j 2 with its Disruptor async loggers takes 200–320 ns and Logback's `AsyncAppender` 300–500 ns ([`RESULTS-LOG.md`](benchmark/RESULTS-LOG.md)). When the buffer is full the caller waits (or drops, with a counter, if you say so); at shutdown a hook drains it, and anything logged after that is written on the calling thread.
 

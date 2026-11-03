@@ -1,6 +1,6 @@
 package io.hydrangea.amqp;
 
-import java.lang.System.Logger;
+import io.hydrangea.log.Logger;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Arrays;
@@ -22,7 +22,7 @@ import java.util.function.Function;
  */
 public final class AmqpChannel {
 
-    private static final Logger LOG = System.getLogger(AmqpChannel.class.getName());
+    private static final Logger LOG = Logger.get(AmqpChannel.class);
 
     /** The answer to a queue declaration. */
     public record QueueInfo(String name, long messageCount, long consumerCount) {
@@ -218,7 +218,7 @@ public final class AmqpChannel {
             try {
                 c.onCancel(tag, cause);
             } catch (Throwable t) {
-                LOG.log(Logger.Level.WARNING, "consumer onCancel failed", t);
+                LOG.warn("consumer onCancel failed", t);
             }
         });
         closeFuture.complete(null);
@@ -486,7 +486,7 @@ public final class AmqpChannel {
                 try {
                     conn.sendMethodFrame(id, method);
                 } catch (RuntimeException e) {
-                    LOG.log(Logger.Level.DEBUG, "could not send {0}", e.toString());
+                    LOG.debug("could not send {}", e.toString());
                 }
             }
         });
@@ -542,7 +542,7 @@ public final class AmqpChannel {
                     try {
                         c.onCancel(tag, null);
                     } catch (Throwable t) {
-                        LOG.log(Logger.Level.WARNING, "consumer onCancel failed", t);
+                        LOG.warn("consumer onCancel failed", t);
                     }
                 }
                 if (!noWait) {
@@ -682,13 +682,13 @@ public final class AmqpChannel {
                 Delivery d = new Delivery(c.consumerTag, c.deliveryTag, c.redelivered, c.exchange, c.routingKey, c.properties, c.body);
                 mDelivered.increment();
                 if (consumer == null) {
-                    LOG.log(Logger.Level.WARNING, "delivery for unknown consumer {0} dropped (tag {1})", c.consumerTag, c.deliveryTag);
+                    LOG.warn("delivery for unknown consumer {} dropped (tag {})", c.consumerTag, c.deliveryTag);
                     return;
                 }
                 try {
                     consumer.onDelivery(d);
                 } catch (Throwable t) {
-                    LOG.log(Logger.Level.WARNING, "consumer " + c.consumerTag + " failed on delivery " + c.deliveryTag, t);
+                    LOG.warn("consumer " + c.consumerTag + " failed on delivery " + c.deliveryTag, t);
                 }
             }
             case BASIC_GET_OK -> c.getRpc.future.complete(new Delivery(null, c.deliveryTag, c.redelivered, c.exchange, c.routingKey, c.properties, c.body));
@@ -699,7 +699,7 @@ public final class AmqpChannel {
                     try {
                         l.accept(new ReturnedMessage(c.replyCode, c.replyText, c.exchange, c.routingKey, c.properties, c.body));
                     } catch (Throwable t) {
-                        LOG.log(Logger.Level.WARNING, "return listener failed", t);
+                        LOG.warn("return listener failed", t);
                     }
                 }
             }

@@ -11,7 +11,7 @@ import io.hydrangea.pipeline.Context;
 import io.hydrangea.pipeline.Pipeline;
 import io.hydrangea.pipeline.Stage;
 
-import java.lang.System.Logger;
+import io.hydrangea.log.Logger;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -70,7 +70,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class MyClient implements AutoCloseable {
 
-    private static final Logger LOG = System.getLogger(MyClient.class.getName());
+    private static final Logger LOG = Logger.get(MyClient.class);
 
     // capability flags
     private static final int CLIENT_LONG_PASSWORD = 0x1, CLIENT_LONG_FLAG = 0x4, CLIENT_CONNECT_WITH_DB = 0x8, CLIENT_PROTOCOL_41 = 0x200, CLIENT_SSL = 0x800,
@@ -614,7 +614,7 @@ public final class MyClient implements AutoCloseable {
         MyConfig kc = config.withQueryTimeout(null).withStatementCacheSize(0).withConnectTimeout(java.time.Duration.ofSeconds(5)).withReconnect(null);
         connect(group, kc).whenComplete((c, err) -> {
             if (err != null) {
-                LOG.log(Logger.Level.DEBUG, "KILL QUERY connection failed: " + err);
+                LOG.debug("KILL QUERY connection failed: " + err);
                 return;
             }
             c.queryText("KILL QUERY " + id).whenComplete((r, e) -> c.close());
@@ -1012,7 +1012,7 @@ public final class MyClient implements AutoCloseable {
         try {
             r.run();
         } catch (Throwable t) {
-            LOG.log(Logger.Level.WARNING, "listener failed", t);
+            LOG.warn("listener failed", t);
         }
     }
 
@@ -1160,7 +1160,7 @@ public final class MyClient implements AutoCloseable {
             } catch (MyException e) {
                 fail(e);
             } catch (RuntimeException e) {
-                LOG.log(Logger.Level.WARNING, "MySQL packet handling failed", e);
+                LOG.warn("MySQL packet handling failed", e);
                 fail(new MyException("internal error: " + e, false, e));
             }
         }

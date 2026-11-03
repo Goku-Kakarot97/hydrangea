@@ -12,7 +12,7 @@ import io.hydrangea.pipeline.Pipeline;
 import io.hydrangea.pipeline.Stage;
 import io.hydrangea.tls.TlsStage;
 
-import java.lang.System.Logger;
+import io.hydrangea.log.Logger;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -35,7 +35,7 @@ import java.util.function.BiConsumer;
  */
 final class MongoConnection {
 
-    private static final Logger LOG = System.getLogger(MongoConnection.class.getName());
+    private static final Logger LOG = Logger.get(MongoConnection.class);
     private static final int OP_MSG = 2013;
     private static final AtomicInteger REQUEST_IDS = new AtomicInteger(1);
     static final String DRIVER_VERSION = "1.0";

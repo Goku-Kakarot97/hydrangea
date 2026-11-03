@@ -4,8 +4,7 @@ import io.hydrangea.EventLoopGroup;
 import io.hydrangea.UdpSocket;
 
 import java.io.IOException;
-import java.lang.System.Logger;
-import java.lang.System.Logger.Level;
+import io.hydrangea.log.Logger;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.net.InetSocketAddress;
@@ -29,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class QuicServer implements AutoCloseable {
 
-    private static final Logger LOG = System.getLogger(QuicServer.class.getName());
+    private static final Logger LOG = Logger.get(QuicServer.class);
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final QuicConfig config;
@@ -98,7 +97,7 @@ public final class QuicServer implements AutoCloseable {
         } catch (QuicWire.Malformed e) {
             // not a QUIC packet: ignore
         } catch (RuntimeException e) {
-            LOG.log(Level.WARNING, "quic datagram handling failed", e);
+            LOG.warn("quic datagram handling failed", e);
         }
     }
 

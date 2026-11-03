@@ -6,7 +6,7 @@ import io.hydrangea.pipeline.Context;
 import io.hydrangea.pipeline.Stage;
 
 import java.io.ByteArrayOutputStream;
-import java.lang.System.Logger;
+import io.hydrangea.log.Logger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.ZoneOffset;
@@ -37,7 +37,7 @@ import java.util.function.Supplier;
  */
 public final class HttpServerStage implements Stage {
 
-    private static final Logger LOG = System.getLogger(HttpServerStage.class.getName());
+    private static final Logger LOG = Logger.get(HttpServerStage.class);
     private static final int MAX_CHUNK_LINE = 1024;
 
     private enum State { HEAD, BODY, CHUNK_SIZE, CHUNK_DATA, CHUNK_CRLF, TRAILERS }
@@ -240,7 +240,7 @@ public final class HttpServerStage implements Stage {
         } catch (HttpException e) {
             fail(ctx, e.status, e.getMessage());
         } catch (Exception e) {
-            LOG.log(Logger.Level.WARNING, "http handling failed", e);
+            LOG.warn("http handling failed", e);
             fail(ctx, 500, "Internal Server Error");
         }
     }
@@ -455,14 +455,15 @@ public final class HttpServerStage implements Stage {
         }
     }
 
-    private void recordResponse(Context ctx, String m, String t, String v, String userAgent, int status, long bytes) {
+    private void recordResponse(Context ctx, String m, String t, String v, String userAgent, int status, long bytes, HttpResponse response) {
         ctx.connection().eventLoop().metrics().recordHttpResponse(status, requestStartNanos);
         endInFlight(ctx);
         AccessLog log = config.accessLog();
         if (log != null) {
             try {
                 Duration took = requestStartNanos == 0 ? Duration.ZERO : Duration.ofNanos(System.nanoTime() - requestStartNanos);
-                log.log(new AccessLog.Entry(ctx.connection().remoteAddress(), m, t, v, status, bytes, took, userAgent));
+                log.log(new AccessLog.Entry(ctx.connection().remoteAddress(), m, t, v, status, bytes, took, userAgent,
+                        response == null ? null : response.headers().get(HttpRouter.TRACE_HEADER)));
             } catch (Throwable ignored) {
                 // a failing logger must not break request handling
             }
@@ -481,7 +482,7 @@ public final class HttpServerStage implements Stage {
         try {
             wanted = handler.wantsStreamingBody(head);
         } catch (Throwable t) {
-            LOG.log(Logger.Level.WARNING, "wantsStreamingBody failed for " + target, t);
+            LOG.warn("wantsStreamingBody failed for " + target, t);
             wanted = false;
         }
         if (!wanted) {
@@ -498,7 +499,7 @@ public final class HttpServerStage implements Stage {
         try {
             stage = handler.handleStreaming(head, sb);
         } catch (Throwable t) {
-            LOG.log(Logger.Level.WARNING, "streaming handler threw for " + head.method() + " " + head.target(), t);
+            LOG.warn("streaming handler threw for " + head.method() + " " + head.target(), t);
             stage = CompletableFuture.failedFuture(t);
         }
         sb.registrationClosed = true;
@@ -532,7 +533,7 @@ public final class HttpServerStage implements Stage {
         }
         HttpResponse r = resp;
         if (err != null) {
-            LOG.log(Logger.Level.WARNING, "streaming handler failed for " + streamHead.method() + " " + streamHead.target(), err);
+            LOG.warn("streaming handler failed for " + streamHead.method() + " " + streamHead.target(), err);
             r = null;
         }
         if (r != null && r.takeover() != null) {
@@ -588,7 +589,7 @@ public final class HttpServerStage implements Stage {
         // A success answered early is no reason to give the connection up: discard the (bounded) rest of the body and go on.
         // An error (rejection) is announced as the end of the connection, which the client can rely on.
         drainKeepAlive = streamKeepAlive && r.status() < 400 && !shuttingDown;
-        recordResponse(ctx, streamHead.method(), streamHead.target(), streamHead.version(), streamHead.headers().get("user-agent"), r.status(), r.body().length);
+        recordResponse(ctx, streamHead.method(), streamHead.target(), streamHead.version(), streamHead.headers().get("user-agent"), r.status(), r.body().length, r);
         sendResponse(ctx, r, false, drainKeepAlive);
         draining = true;
         drainBudget = DRAIN_BUDGET;
@@ -681,7 +682,7 @@ public final class HttpServerStage implements Stage {
             try {
                 listener.onData(slice, this);
             } catch (Throwable t) {
-                LOG.log(Logger.Level.WARNING, "request body listener failed for " + streamHead.target(), t);
+                LOG.warn("request body listener failed for " + streamHead.target(), t);
                 ended = true;
                 failStream(ctx);
             }
@@ -696,7 +697,7 @@ public final class HttpServerStage implements Stage {
                 try {
                     listener.onComplete();
                 } catch (Throwable t) {
-                    LOG.log(Logger.Level.WARNING, "request body listener failed in onComplete", t);
+                    LOG.warn("request body listener failed in onComplete", t);
                     failStream(ctx);
                 }
             }
@@ -936,13 +937,13 @@ public final class HttpServerStage implements Stage {
         try {
             stage = handler.handle(request);
         } catch (Throwable t) {
-            LOG.log(Logger.Level.WARNING, "handler threw for " + request.method() + " " + request.target(), t);
+            LOG.warn("handler threw for " + request.method() + " " + request.target(), t);
             finish(ctx, request, null, ka);
             return;
         }
         stage.whenComplete((resp, err) -> {
             if (err != null) {
-                LOG.log(Logger.Level.WARNING, "handler failed for " + request.method() + " " + request.target(), err);
+                LOG.warn("handler failed for " + request.method() + " " + request.target(), err);
             }
             try {
                 c.eventLoop().execute(() -> finish(ctx, request, err == null ? resp : null, ka));
@@ -1008,7 +1009,7 @@ public final class HttpServerStage implements Stage {
             try {
                 switchTo = response.takeover().get();
             } catch (Throwable t) {
-                LOG.log(Logger.Level.WARNING, "protocol upgrade failed for " + request.target(), t);
+                LOG.warn("protocol upgrade failed for " + request.target(), t);
                 response = null;
             }
         }
@@ -1020,7 +1021,7 @@ public final class HttpServerStage implements Stage {
             ka = false; // this connection ends with the response in hand; the client is told so
         }
         recordResponse(ctx, request.method(), request.target(), request.version(), request.headers().get("user-agent"), response.status(),
-                response.isStreaming() || response.status() == 101 || request.method().equals("HEAD") ? 0 : response.body().length);
+                response.isStreaming() || response.status() == 101 || request.method().equals("HEAD") ? 0 : response.body().length, response);
         if (switchTo != null) {
             sendResponse(ctx, response, false, true);
             upgraded = switchTo;
@@ -1053,7 +1054,7 @@ public final class HttpServerStage implements Stage {
     private void fail(Context ctx, int status, String reason) {
         closing = true;
         cancelTimer();
-        recordResponse(ctx, method, target, version, headers == null ? null : headers.get("user-agent"), status, reason.length());
+        recordResponse(ctx, method, target, version, headers == null ? null : headers.get("user-agent"), status, reason.length(), null);
         sendResponse(ctx, HttpResponse.status(status).text(reason), false, false);
         closeLingering(ctx);
     }

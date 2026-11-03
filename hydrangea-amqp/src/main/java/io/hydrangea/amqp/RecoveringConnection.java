@@ -2,7 +2,7 @@ package io.hydrangea.amqp;
 
 import io.hydrangea.EventLoopGroup;
 
-import java.lang.System.Logger;
+import io.hydrangea.log.Logger;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,7 +38,7 @@ import java.util.function.Consumer;
  */
 public final class RecoveringConnection implements AutoCloseable {
 
-    private static final Logger LOG = System.getLogger(RecoveringConnection.class.getName());
+    private static final Logger LOG = Logger.get(RecoveringConnection.class);
 
     enum State { CONNECTED, RECOVERING, CLOSED }
 
@@ -292,7 +292,7 @@ public final class RecoveringConnection implements AutoCloseable {
                     giveUp(last); // refused: bad credentials or no such virtual host; waiting will not change that
                     return;
                 }
-                LOG.log(Logger.Level.INFO, "AMQP recovery attempt {0} failed: {1}", attempt, last.toString());
+                LOG.info("AMQP recovery attempt {} failed: {}", attempt, last.toString());
             }
         }
     }
@@ -365,7 +365,7 @@ public final class RecoveringConnection implements AutoCloseable {
         } catch (ExecutionException | CompletionException e) {
             Throwable cause = unwrap(e);
             if (cause instanceof AmqpException a && !a.isConnectionError()) {
-                LOG.log(Logger.Level.WARNING, "AMQP recovery: the broker refused to declare {0} again ({1}); dropping it", what, a.getMessage());
+                LOG.warn("AMQP recovery: the broker refused to declare {} again ({}); dropping it", what, a.getMessage());
                 forget.run();
                 fire(l -> l.declarationFailed(what, a));
                 return c.openChannel().get(30, TimeUnit.SECONDS); // the broker closed the old one
@@ -394,7 +394,7 @@ public final class RecoveringConnection implements AutoCloseable {
             try {
                 call.accept(l);
             } catch (Throwable t) {
-                LOG.log(Logger.Level.WARNING, "recovery listener failed", t);
+                LOG.warn("recovery listener failed", t);
             }
         }
     }

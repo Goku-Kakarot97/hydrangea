@@ -2,13 +2,13 @@ package io.hydrangea.pipeline;
 
 import io.hydrangea.Connection;
 
-import java.lang.System.Logger;
+import io.hydrangea.log.Logger;
 import java.nio.ByteBuffer;
 
 /** A stage's view of the pipeline. Loop-thread only (use {@code connection().eventLoop().execute} from elsewhere). */
 public final class Context {
 
-    private static final Logger LOG = System.getLogger(Context.class.getName());
+    private static final Logger LOG = Logger.get(Context.class);
 
     private final Pipeline pipeline;
     private final int index;
@@ -34,7 +34,7 @@ public final class Context {
         if (next != null) {
             next.onRead(pipeline.context(index + 1), msg);
         } else {
-            LOG.log(Logger.Level.DEBUG, "message reached the end of the pipeline and was dropped: {0}", msg);
+            LOG.debug("message reached the end of the pipeline and was dropped: {}", msg);
         }
     }
 

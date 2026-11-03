@@ -31,27 +31,27 @@ class ArchitectureTest {
 
     /** package -> the packages it may use (besides itself). Keep this acyclic: it is the module graph. */
     private static final Map<String, Set<String>> ALLOWED = Map.ofEntries(
-            Map.entry("core", Set.of()),
-            Map.entry("codec", Set.of("core")),
-            Map.entry("pipeline", Set.of("core", "codec")),
-            Map.entry("tls", Set.of("core", "codec", "pipeline")),
-            Map.entry("quic", Set.of("core")),
+            Map.entry("core", Set.of("log")),
+            Map.entry("codec", Set.of("core", "log")),
+            Map.entry("pipeline", Set.of("core", "codec", "log")),
+            Map.entry("tls", Set.of("core", "codec", "pipeline", "log")),
+            Map.entry("quic", Set.of("core", "log")),
             Map.entry("http2", Set.of()),                       // HPACK / QPACK: pure functions on bytes
-            Map.entry("mqtt", Set.of("core", "codec", "pipeline", "tls", "http", "websocket")),   // http/websocket: only MqttWebSocket
-            Map.entry("amqp", Set.of("core", "codec", "pipeline", "tls")),
-            Map.entry("redis", Set.of("core", "codec", "pipeline", "tls")),
-            Map.entry("kafka", Set.of("core", "codec", "pipeline", "tls")),
+            Map.entry("mqtt", Set.of("core", "codec", "pipeline", "tls", "http", "websocket", "log")),   // http/websocket: only MqttWebSocket
+            Map.entry("amqp", Set.of("core", "codec", "pipeline", "tls", "log")),
+            Map.entry("redis", Set.of("core", "codec", "pipeline", "tls", "log")),
+            Map.entry("kafka", Set.of("core", "codec", "pipeline", "tls", "log")),
             Map.entry("sql", Set.of()),                         // the interfaces the database clients share: JDK only
-            Map.entry("postgres", Set.of("core", "codec", "pipeline", "tls", "sql")),
-            Map.entry("mysql", Set.of("core", "codec", "pipeline", "tls", "sql")),
+            Map.entry("postgres", Set.of("core", "codec", "pipeline", "tls", "sql", "log")),
+            Map.entry("mysql", Set.of("core", "codec", "pipeline", "tls", "sql", "log")),
             Map.entry("micrometer", Set.of("core")),             // the one module allowed to import a third-party library (io.micrometer)
-            Map.entry("log", Set.of()),                         // the logging library: JDK only; core reaches it through System.Logger, never by name
-            Map.entry("http", Set.of("core", "codec", "pipeline", "tls", "http2", "quic")),
-            Map.entry("websocket", Set.of("core", "codec", "pipeline", "tls", "http")),
-            Map.entry("sse", Set.of("core", "pipeline", "http")),
-            Map.entry("grpc", Set.of("core", "pipeline", "http")),
-            Map.entry("mongodb", Set.of("core", "codec", "pipeline", "tls")),
-            Map.entry("elasticsearch", Set.of("core", "codec", "http")),   // an HTTP API: the HTTP client does the wire work; codec: the record mapper
+            Map.entry("log", Set.of()),                         // the logging library: JDK only, at the bottom of the graph; every module logs through it
+            Map.entry("http", Set.of("core", "codec", "pipeline", "tls", "http2", "quic", "log")),
+            Map.entry("websocket", Set.of("core", "codec", "pipeline", "tls", "http", "log")),
+            Map.entry("sse", Set.of("core", "pipeline", "http", "log")),
+            Map.entry("grpc", Set.of("core", "pipeline", "http", "log")),
+            Map.entry("mongodb", Set.of("core", "codec", "pipeline", "tls", "log")),
+            Map.entry("elasticsearch", Set.of("core", "codec", "http", "log")),   // an HTTP API: the HTTP client does the wire work; codec: the record mapper
             Map.entry("fuzz", Set.of()),                        // test helpers (core's test sources): JDK only
             Map.entry("testing", Set.of()),
             Map.entry("examples", Set.of("core", "codec", "pipeline", "tls", "quic", "http2", "amqp", "mqtt", "redis", "kafka", "postgres", "mysql", "sql", "http", "websocket", "sse", "grpc", "elasticsearch", "mongodb", "log")));
@@ -194,7 +194,8 @@ class ArchitectureTest {
         for (String start : ALLOWED.keySet()) {
             assertTrue(!reaches(start, start, new TreeSet<>()), start + " can reach itself through ALLOWED");
         }
-        assertTrue(ALLOWED.get("core").isEmpty(), "core uses nothing");
+        assertEquals(Set.of("log"), ALLOWED.get("core"), "core uses nothing but the logging library");
+        assertTrue(ALLOWED.get("log").isEmpty(), "the logging library uses nothing: it is the bottom of the graph");
         for (Map.Entry<String, Set<String>> e : ALLOWED.entrySet()) {
             if (!e.getKey().equals("examples")) {
                 assertTrue(!e.getValue().contains("examples"), "nothing may use examples");

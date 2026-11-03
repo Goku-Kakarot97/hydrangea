@@ -9,7 +9,7 @@ import io.hydrangea.http.HttpRequest;
 import io.hydrangea.pipeline.Context;
 import io.hydrangea.pipeline.Stage;
 
-import java.lang.System.Logger;
+import io.hydrangea.log.Logger;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
  */
 final class ServerCall<Req, Resp> implements Stage, HalfCloseListener, CallContext {
 
-    private static final Logger LOG = System.getLogger(ServerCall.class.getName());
+    private static final Logger LOG = Logger.get(ServerCall.class);
 
     private final MethodDescriptor<Req, Resp> method;
     private final Object handler;
@@ -317,7 +317,7 @@ final class ServerCall<Req, Resp> implements Stage, HalfCloseListener, CallConte
         cancelTimer();
         notifyClose(status);
         if (!status.isOk() && status.code() == Status.Code.UNKNOWN && cause != null && !(cause instanceof StatusException)) {
-            LOG.log(Logger.Level.WARNING, "handler of " + method.fullName() + " failed", cause);
+            LOG.warn("handler of " + method.fullName() + " failed", cause);
         }
         Headers h = new Headers();
         h.add("grpc-status", Integer.toString(status.code().value()));
@@ -403,7 +403,7 @@ final class ServerCall<Req, Resp> implements Stage, HalfCloseListener, CallConte
                 try {
                     event.accept(l);
                 } catch (Throwable t) {
-                    LOG.log(Logger.Level.WARNING, "interceptor failed", t);
+                    LOG.warn("interceptor failed", t);
                 }
             }
         }
@@ -436,7 +436,7 @@ final class ServerCall<Req, Resp> implements Stage, HalfCloseListener, CallConte
         try {
             r.run();
         } catch (Throwable t) {
-            LOG.log(Logger.Level.WARNING, "gRPC callback failed", t);
+            LOG.warn("gRPC callback failed", t);
         }
     }
 

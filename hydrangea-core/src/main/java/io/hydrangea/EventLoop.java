@@ -2,8 +2,7 @@ package io.hydrangea;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.lang.System.Logger;
-import java.lang.System.Logger.Level;
+import io.hydrangea.log.Logger;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.util.ArrayList;
@@ -24,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public final class EventLoop implements Executor {
 
-    private static final Logger LOG = System.getLogger(EventLoop.class.getName());
+    private static final Logger LOG = Logger.get(EventLoop.class);
     /** Size of the shared read buffer; one per loop instead of one per connection. */
     private static final int READ_BUFFER_SIZE = 64 * 1024;
     static final int SPIN_THRESHOLD = 512;
@@ -187,7 +186,7 @@ public final class EventLoop implements Executor {
         selector = fresh;
         old.close();
         metrics.selectorRebuilds.increment();
-        LOG.log(Level.WARNING, "{0}: selector rebuilt after spurious wakeups, {1} channels migrated",
+        LOG.warn("{}: selector rebuilt after spurious wakeups, {} channels migrated",
                 thread.getName(), moved);
     }
 
@@ -215,7 +214,7 @@ public final class EventLoop implements Executor {
                 dispatch();
             }
         } catch (Throwable t) {
-            LOG.log(Level.ERROR, "event loop " + thread.getName() + " crashed", t);
+            LOG.error("event loop " + thread.getName() + " crashed", t);
             closeAll();
         } finally {
             try {
@@ -301,7 +300,7 @@ public final class EventLoop implements Executor {
                 try {
                     h.terminate();
                 } catch (Throwable t) {
-                    LOG.log(Level.WARNING, "error terminating " + key.channel(), t);
+                    LOG.warn("error terminating " + key.channel(), t);
                 }
             }
             key.cancel();
@@ -345,7 +344,7 @@ public final class EventLoop implements Executor {
             } catch (CancelledKeyException ignored) {
                 // closed while being handled
             } catch (Throwable t) {
-                LOG.log(Level.WARNING, "unhandled error for " + key.channel(), t);
+                LOG.warn("unhandled error for " + key.channel(), t);
             }
             long took = System.nanoTime() - t0;
             if (took > metrics.maxBlockNanos.get()) { // read first: the accumulator is shared by every loop, so do not write to it per event
@@ -360,7 +359,7 @@ public final class EventLoop implements Executor {
         try {
             r.run();
         } catch (Throwable t) {
-            LOG.log(Level.ERROR, "task failed", t);
+            LOG.error("task failed", t);
         }
         metrics.tasksExecuted.increment();
         long took = System.nanoTime() - t0;

@@ -20,23 +20,32 @@ public interface AccessLog {
      * @param responseBytes size of the response body (0 for streamed responses and protocol switches)
      * @param duration      from the moment the request head was parsed until the response was handed to the connection
      * @param userAgent     the {@code User-Agent} header, or null
+     * @param traceId       the response's {@code X-Trace-Id} (set by {@link HttpRouter}), or null
      */
     record Entry(SocketAddress remote, String method, String target, String version, int status, long responseBytes,
-                 Duration duration, String userAgent) {
+                 Duration duration, String userAgent, String traceId) {
+
+        public Entry(SocketAddress remote, String method, String target, String version, int status, long responseBytes,
+                     Duration duration, String userAgent) {
+            this(remote, method, target, version, status, responseBytes, duration, userAgent, null);
+        }
     }
 
     /**
-     * One line per response through {@link System.Logger} at INFO, in a common-log-like layout.
-     * <p>
-     * Caveat: when {@code java.util.logging} is the backend, the JDK's own shutdown hook closes its handlers as soon as the JVM starts
-     * shutting down, so lines for requests that finish <em>during</em> a graceful shutdown started from a shutdown hook can be lost.
-     * Use a backend that does not do that (Logback, Log4j 2 and others keep logging until their own hooks run) or a custom {@link AccessLog}.
+     * One line per response through a {@link io.hydrangea.log.Logger} at INFO, in a common-log-like layout, with the request's
+     * trace id (see {@link HttpRouter}) as the {@code trace_id} field when there is one.
      */
     static AccessLog toLogger(String loggerName) {
-        System.Logger logger = System.getLogger(loggerName);
-        return e -> logger.log(System.Logger.Level.INFO, String.format("%s \"%s %s %s\" %d %d %.1fms \"%s\"",
-                e.remote(), clean(e.method()), clean(e.target()), clean(e.version()), e.status(), e.responseBytes(),
-                e.duration().toNanos() / 1e6, clean(e.userAgent())));
+        io.hydrangea.log.Logger logger = io.hydrangea.log.Logger.get(loggerName);
+        return e -> {
+            io.hydrangea.log.LogEntry entry = logger.at(io.hydrangea.log.Level.INFO);
+            if (e.traceId() != null) {
+                entry.kv(HttpRouter.TRACE_KEY, e.traceId());
+            }
+            entry.log(String.format("%s \"%s %s %s\" %d %d %.1fms \"%s\"",
+                    e.remote(), clean(e.method()), clean(e.target()), clean(e.version()), e.status(), e.responseBytes(),
+                    e.duration().toNanos() / 1e6, clean(e.userAgent())));
+        };
     }
 
     /** Client-controlled text must not be able to forge log lines or break the quoting. */

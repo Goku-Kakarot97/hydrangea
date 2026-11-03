@@ -10,7 +10,7 @@ import io.hydrangea.pipeline.Pipeline;
 import io.hydrangea.pipeline.Stage;
 import io.hydrangea.tls.TlsStage;
 
-import java.lang.System.Logger;
+import io.hydrangea.log.Logger;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
@@ -24,7 +24,7 @@ import java.util.function.Consumer;
  */
 final class Broker {
 
-    private static final Logger LOG = System.getLogger(Broker.class.getName());
+    private static final Logger LOG = Logger.get(Broker.class);
 
     final int nodeId;
     final String host;
@@ -119,7 +119,7 @@ final class Broker {
             } catch (KafkaException e) {
                 lost(e);
             } catch (RuntimeException e) {
-                LOG.log(Logger.Level.WARNING, "Kafka response handling failed", e);
+                LOG.warn("Kafka response handling failed", e);
                 lost(new KafkaException("internal error: " + e, false, e));
             }
         }

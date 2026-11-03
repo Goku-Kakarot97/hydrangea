@@ -5,7 +5,7 @@ import io.hydrangea.EventLoopGroup;
 import io.hydrangea.Scheduled;
 import io.hydrangea.codec.Accumulator;
 
-import java.lang.System.Logger;
+import io.hydrangea.log.Logger;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.ArrayDeque;
@@ -43,7 +43,7 @@ import java.util.concurrent.TimeUnit;
  */
 public final class MqttClient implements AutoCloseable {
 
-    private static final Logger LOG = System.getLogger(MqttClient.class.getName());
+    private static final Logger LOG = Logger.get(MqttClient.class);
 
     private enum State { CONNECTING, ONLINE, OFFLINE, CLOSED }
 
@@ -757,7 +757,7 @@ public final class MqttClient implements AutoCloseable {
         try {
             r.run();
         } catch (Throwable t) {
-            LOG.log(Logger.Level.WARNING, "MQTT listener failed", t);
+            LOG.warn("MQTT listener failed", t);
         }
     }
 
@@ -1023,7 +1023,7 @@ public final class MqttClient implements AutoCloseable {
             } catch (MqttException e) {
                 fail(e);
             } catch (RuntimeException e) {
-                LOG.log(Logger.Level.WARNING, "MQTT packet handling failed", e);
+                LOG.warn("MQTT packet handling failed", e);
                 fail(new MqttException("internal error: " + e, false, e));
             }
         }
@@ -1414,7 +1414,7 @@ public final class MqttClient implements AutoCloseable {
         try {
             s.handler.onMessage(m);
         } catch (Throwable t) {
-            LOG.log(Logger.Level.WARNING, "MQTT message handler failed", t);
+            LOG.warn("MQTT message handler failed", t);
         }
     }
 

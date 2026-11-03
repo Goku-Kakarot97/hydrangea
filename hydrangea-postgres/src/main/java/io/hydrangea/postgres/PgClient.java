@@ -12,7 +12,7 @@ import io.hydrangea.pipeline.Pipeline;
 import io.hydrangea.pipeline.Stage;
 import io.hydrangea.tls.TlsStage;
 
-import java.lang.System.Logger;
+import io.hydrangea.log.Logger;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -83,7 +83,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class PgClient implements AutoCloseable {
 
-    private static final Logger LOG = System.getLogger(PgClient.class.getName());
+    private static final Logger LOG = Logger.get(PgClient.class);
 
     private enum State { CONNECTING, AUTH, ONLINE, OFFLINE, CLOSED }      // OFFLINE: lost, waiting for the next reconnect attempt
 
@@ -1285,11 +1285,11 @@ public final class PgClient implements AutoCloseable {
         try {
             Client.connect(home, addr, options, pipeline).whenComplete((c, err) -> {
                 if (err != null) {
-                    LOG.log(Logger.Level.DEBUG, "cancel request to " + addr + " failed: " + err);
+                    LOG.debug("cancel request to " + addr + " failed: " + err);
                 }
             });
         } catch (RuntimeException e) {
-            LOG.log(Logger.Level.DEBUG, "cancel request failed: " + e);
+            LOG.debug("cancel request failed: " + e);
         }
     }
 
@@ -1518,7 +1518,7 @@ public final class PgClient implements AutoCloseable {
             } catch (PgException e) {
                 fail(e);
             } catch (RuntimeException e) {
-                LOG.log(Logger.Level.WARNING, "PostgreSQL message handling failed", e);
+                LOG.warn("PostgreSQL message handling failed", e);
                 fail(new PgException("internal error: " + e, false, e));
             }
         }
@@ -1601,7 +1601,7 @@ public final class PgClient implements AutoCloseable {
         try {
             r.run();
         } catch (Throwable t) {
-            LOG.log(Logger.Level.WARNING, "listener failed", t);
+            LOG.warn("listener failed", t);
         }
     }
 

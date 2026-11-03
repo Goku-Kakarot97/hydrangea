@@ -1,8 +1,7 @@
 package io.hydrangea;
 
 import java.io.IOException;
-import java.lang.System.Logger;
-import java.lang.System.Logger.Level;
+import io.hydrangea.log.Logger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -32,7 +31,7 @@ import java.util.function.Supplier;
  */
 public final class Server implements AutoCloseable {
 
-    private static final Logger LOG = System.getLogger(Server.class.getName());
+    private static final Logger LOG = Logger.get(Server.class);
     private static final int MAX_ACCEPTS_PER_EVENT = 64;
 
     private final EventLoopGroup workers;
@@ -189,7 +188,7 @@ public final class Server implements AutoCloseable {
                     track(connection, accepted);
                     connection.start(null);
                 } catch (Throwable t) {
-                    LOG.log(Level.WARNING, "failed to accept connection", t);
+                    LOG.warn("failed to accept connection", t);
                     if (accepted != null) {
                         try {
                             accepted.close();

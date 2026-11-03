@@ -1,8 +1,6 @@
 package io.hydrangea.log;
 
 import java.io.BufferedOutputStream;
-import java.io.FileDescriptor;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
@@ -16,9 +14,9 @@ import java.util.function.Consumer;
  * A failing write is counted ({@link Log#stats}) and reported to {@code System.err} a few times, never thrown at the caller.
  *
  * <pre>{@code
- * Appender.console()                        // stdout, fast path (bypasses System.out's per-write flush)
+ * Appender.console()                        // System.out, one write per batch (so redirections and test captures see the lines)
  * Appender.stderr()
- * Appender.stream(System.out)               // through System.out: slower, but test frameworks that capture it see the lines
+ * Appender.stream(out)                      // any stream
  * Appender.file(Path.of("app.log"))         // rolls at 100 MB, keeps 10 old files
  * Appender.file(path, LogFormat.json(), 50_000_000, 5)
  * Appender.memory()                         // keeps the lines and events: for tests
@@ -97,9 +95,13 @@ public abstract class Appender implements LogStage {
         return console(LogFormat.line());
     }
 
-    /** Standard output, written through a buffer of this appender's own, flushed at the end of every batch. */
+    /**
+     * Standard output: lines are gathered in a buffer of this appender's own and handed to the current {@code System.out} once per
+     * batch (one write and one flush, not one per line), so output stays fast and still goes wherever {@code System.out} points,
+     * including a test runner's capture.
+     */
     public static Appender console(LogFormat format) {
-        return new StreamAppender(new BufferedOutputStream(new FileOutputStream(FileDescriptor.out), 1 << 15), format, false);
+        return new StreamAppender(new BufferedOutputStream(new SystemStream(false), 1 << 15), format, false);
     }
 
     public static Appender stderr() {
@@ -107,7 +109,7 @@ public abstract class Appender implements LogStage {
     }
 
     public static Appender stderr(LogFormat format) {
-        return new StreamAppender(new BufferedOutputStream(new FileOutputStream(FileDescriptor.err), 1 << 15), format, false);
+        return new StreamAppender(new BufferedOutputStream(new SystemStream(true), 1 << 15), format, false);
     }
 
     /** Any stream; it is flushed after every batch and not closed. */
@@ -155,5 +157,34 @@ public abstract class Appender implements LogStage {
                 return "Appender.to(" + consumer + ")";
             }
         };
+    }
+
+    /** Forwards to whatever {@code System.out} / {@code System.err} is at the time of the write, so a later redirection is honoured. */
+    private static final class SystemStream extends OutputStream {
+        private final boolean err;
+
+        SystemStream(boolean err) {
+            this.err = err;
+        }
+
+        @Override
+        public void write(int b) {
+            (err ? System.err : System.out).write(b);
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) {
+            (err ? System.err : System.out).write(b, off, len);
+        }
+
+        @Override
+        public void flush() {
+            (err ? System.err : System.out).flush();
+        }
+
+        @Override
+        public String toString() {
+            return err ? "System.err" : "System.out";
+        }
     }
 }

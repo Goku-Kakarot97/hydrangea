@@ -11,7 +11,7 @@ import io.hydrangea.pipeline.Pipeline;
 import io.hydrangea.pipeline.Stage;
 import io.hydrangea.tls.TlsStage;
 
-import java.lang.System.Logger;
+import io.hydrangea.log.Logger;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -50,7 +50,7 @@ import java.util.function.Function;
  */
 public final class RedisClient implements AutoCloseable {
 
-    private static final Logger LOG = System.getLogger(RedisClient.class.getName());
+    private static final Logger LOG = Logger.get(RedisClient.class);
 
     private enum State { CONNECTING, ONLINE, OFFLINE, CLOSED }
 
@@ -392,7 +392,7 @@ public final class RedisClient implements AutoCloseable {
             } catch (RedisException e) {
                 fail(e);
             } catch (RuntimeException e) {
-                LOG.log(Logger.Level.WARNING, "Redis reply handling failed", e);
+                LOG.warn("Redis reply handling failed", e);
                 fail(new RedisException("internal error: " + e, false, e));
             }
         }
@@ -488,7 +488,7 @@ public final class RedisClient implements AutoCloseable {
         try {
             r.run();
         } catch (Throwable t) {
-            LOG.log(Logger.Level.WARNING, "Redis listener failed", t);
+            LOG.warn("Redis listener failed", t);
         }
     }
 
@@ -615,7 +615,7 @@ public final class RedisClient implements AutoCloseable {
 
     private void logResubscribe(RedisException err) {
         if (err != null) {
-            LOG.log(Logger.Level.WARNING, "restoring the subscriptions failed: " + err.getMessage());
+            LOG.warn("restoring the subscriptions failed: " + err.getMessage());
         }
     }
 
@@ -742,7 +742,7 @@ public final class RedisClient implements AutoCloseable {
             try {
                 h.onMessage(channel, pattern, bytes);
             } catch (Throwable t) {
-                LOG.log(Logger.Level.WARNING, "Redis message handler failed", t);
+                LOG.warn("Redis message handler failed", t);
             }
         }
     }

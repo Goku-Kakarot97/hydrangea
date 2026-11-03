@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
 
 /**
  * Per-thread key/value pairs copied into every event the thread logs (a request id, a user, a tenant ...): what other libraries call
@@ -18,6 +20,16 @@ import java.util.Objects;
  * }</pre>
  *
  * The snapshot taken when logging is cached until the next change, so a thread that logs many times between changes copies nothing.
+ * <p>
+ * Nothing crosses a thread by itself. When work continues elsewhere (a callback on another thread, a task on an executor, a
+ * completion of a future), carry the context over explicitly:
+ * <pre>{@code
+ * executor.execute(LogContext.wrap(() -> log.info("still has the trace id")));
+ * Executor traced = LogContext.wrap(executor);                               // every task submitted carries the submitter's context
+ * LogContext.Snapshot snap = LogContext.capture();                           // ... later, on any thread:
+ * try (var scope = snap.attach()) { log.info("same context"); }
+ * }</pre>
+ * In an event loop that serves many requests on one thread, open a scope per request (see {@code HttpRouter}, which does it for you).
  */
 public final class LogContext {
 
@@ -90,6 +102,77 @@ public final class LogContext {
         };
     }
 
+    /** The current context, to attach on another thread (or on this one later). */
+    public static Snapshot capture() {
+        String[] kv = snapshot();
+        return kv == null ? Snapshot.EMPTY : new Snapshot(kv);
+    }
+
+    /** A runnable that runs with the context of the thread that called {@code wrap}, then restores what the running thread had. */
+    public static Runnable wrap(Runnable task) {
+        Objects.requireNonNull(task, "task");
+        Snapshot snap = capture();
+        return () -> {
+            try (Scope ignored = snap.attach()) {
+                task.run();
+            }
+        };
+    }
+
+    public static <T> Callable<T> wrap(Callable<T> task) {
+        Objects.requireNonNull(task, "task");
+        Snapshot snap = capture();
+        return () -> {
+            try (Scope ignored = snap.attach()) {
+                return task.call();
+            }
+        };
+    }
+
+    /** An executor whose tasks run with the context of whoever submitted them. */
+    public static Executor wrap(Executor executor) {
+        Objects.requireNonNull(executor, "executor");
+        return task -> executor.execute(wrap(task));
+    }
+
+    /** A frozen copy of a thread's context, taken with {@link #capture}. Immutable, safe to share. */
+    public static final class Snapshot {
+        static final Snapshot EMPTY = new Snapshot(new String[0]);
+        private final String[] kv;
+
+        private Snapshot(String[] kv) {
+            this.kv = kv;
+        }
+
+        public boolean isEmpty() {
+            return kv.length == 0;
+        }
+
+        public Map<String, String> asMap() {
+            Map<String, String> m = new LinkedHashMap<>();
+            for (int i = 0; i < kv.length; i += 2) {
+                m.put(kv[i], kv[i + 1]);
+            }
+            return m;
+        }
+
+        /** Replaces the current thread's context with this one until the scope closes, when the previous context comes back. */
+        public Scope attach() {
+            Ctx c = CTX.get();
+            String[] previous = c == null ? null : c.snapshot();
+            if (c == null) {
+                if (kv.length == 0) {
+                    return () -> { };
+                }
+                c = new Ctx();
+                CTX.set(c);
+            }
+            c.replace(kv);
+            Ctx target = c;
+            return () -> target.replace(previous == null ? new String[0] : previous);
+        }
+    }
+
     /** Alternating key, value, or {@code null} when empty. The array is shared and must not be modified. */
     static String[] snapshot() {
         Ctx c = CTX.get();
@@ -143,6 +226,18 @@ public final class LogContext {
         void clear() {
             Arrays.fill(kv, 0, size, null);
             size = 0;
+            frozen = null;
+        }
+
+        /** Makes this context a copy of {@code pairs} (alternating key, value). */
+        void replace(String[] pairs) {
+            if (kv.length < pairs.length) {
+                kv = new String[Math.max(8, pairs.length)];
+            } else {
+                Arrays.fill(kv, 0, size, null);
+            }
+            System.arraycopy(pairs, 0, kv, 0, pairs.length);
+            size = pairs.length;
             frozen = null;
         }
 

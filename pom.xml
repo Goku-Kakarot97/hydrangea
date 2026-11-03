@@ -41,6 +41,7 @@
     </issueManagement>
 
     <modules>
+        <module>hydrangea-log</module>
         <module>hydrangea-core</module>
         <module>hydrangea-quic</module>
         <module>hydrangea-http</module>
@@ -54,7 +55,6 @@
         <module>hydrangea-mysql</module>
         <module>hydrangea-elasticsearch</module>
         <module>hydrangea-mongodb</module>
-        <module>hydrangea-log</module>
         <module>hydrangea-micrometer</module>
          <module>hydrangea-examples</module>
     </modules>
@@ -64,8 +64,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <!-- The libraries have no dependencies of their own (ArchitectureTest checks it); external artifacts are JUnit, for tests, and Micrometer, in the
-         hydrangea-micrometer module only (optional, nothing else uses it). -->
+    <!-- The libraries have no third-party dependencies (ArchitectureTest checks it): every module logs through hydrangea-log, which is JDK only;
+         external artifacts are JUnit, for tests, and Micrometer, in the hydrangea-micrometer module only (optional, nothing else uses it). -->
     <dependencyManagement>
         <dependencies>
             <dependency>

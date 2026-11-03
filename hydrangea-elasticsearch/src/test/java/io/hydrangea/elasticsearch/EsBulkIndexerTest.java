@@ -30,6 +30,9 @@ class EsBulkIndexerTest {
 
     @AfterAll
     static void tearDown() {
+        if (es == null) {
+            return;           // setUp skipped itself: no Elasticsearch to talk to
+        }
         for (String i : created) {
             try {
                 es.deleteIndex(i).get(10, TimeUnit.SECONDS);

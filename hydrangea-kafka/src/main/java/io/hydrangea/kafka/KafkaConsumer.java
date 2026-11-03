@@ -4,6 +4,8 @@ import io.hydrangea.Latency;
 import io.hydrangea.Metrics;
 import io.hydrangea.Scheduled;
 
+import io.hydrangea.log.Logger;
+
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -729,7 +731,7 @@ public final class KafkaConsumer implements AutoCloseable {
         try {
             r.run();
         } catch (RuntimeException e) {
-            System.getLogger(KafkaConsumer.class.getName()).log(System.Logger.Level.WARNING, "rebalance listener failed", e);
+            Logger.get(KafkaConsumer.class).warn("rebalance listener failed", e);
         }
     }
 

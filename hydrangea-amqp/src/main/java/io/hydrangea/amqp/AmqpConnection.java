@@ -13,7 +13,7 @@ import io.hydrangea.pipeline.Stage;
 import io.hydrangea.tls.TlsStage;
 
 import java.io.IOException;
-import java.lang.System.Logger;
+import io.hydrangea.log.Logger;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
  */
 public final class AmqpConnection implements AutoCloseable {
 
-    private static final Logger LOG = System.getLogger(AmqpConnection.class.getName());
+    private static final Logger LOG = Logger.get(AmqpConnection.class);
 
     static final int FRAME_METHOD = 1;
     static final int FRAME_HEADER = 2;
@@ -284,7 +284,7 @@ public final class AmqpConnection implements AutoCloseable {
         if (state == State.CLOSED) {
             return;
         }
-        LOG.log(Logger.Level.WARNING, "closing the AMQP connection: {0}", e.getMessage());
+        LOG.warn("closing the AMQP connection: {}", e.getMessage());
         closeReason = e;
         if (state == State.OPEN || state == State.CLOSING) {
             try {
@@ -333,7 +333,7 @@ public final class AmqpConnection implements AutoCloseable {
                 fatal(e);
             } catch (RuntimeException e) {
                 fatal(new AmqpException(AmqpException.INTERNAL_ERROR, "internal error: " + e, true));
-                LOG.log(Logger.Level.WARNING, "AMQP frame handling failed", e);
+                LOG.warn("AMQP frame handling failed", e);
             }
         }
 
@@ -345,7 +345,7 @@ public final class AmqpConnection implements AutoCloseable {
                 try {
                     l.accept(writable);
                 } catch (Throwable t) {
-                    LOG.log(Logger.Level.WARNING, "writability listener failed", t);
+                    LOG.warn("writability listener failed", t);
                 }
             }
             c.fireWritabilityChanged();

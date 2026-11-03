@@ -11,7 +11,7 @@ import io.hydrangea.pipeline.Stage;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.lang.System.Logger;
+import io.hydrangea.log.Logger;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  */
 final class Http2ClientStage implements Stage {
 
-    private static final Logger LOG = System.getLogger(Http2ClientStage.class.getName());
+    private static final Logger LOG = Logger.get(Http2ClientStage.class);
 
     private static final int DATA = 0, HEADERS = 1, PRIORITY = 2, RST_STREAM = 3, SETTINGS = 4, PUSH_PROMISE = 5, PING = 6,
             GOAWAY = 7, WINDOW_UPDATE = 8, CONTINUATION = 9;
@@ -183,7 +183,7 @@ final class Http2ClientStage implements Stage {
         try {
             parse();
         } catch (RuntimeException e) {
-            LOG.log(Logger.Level.WARNING, "http/2 client failed", e);
+            LOG.warn("http/2 client failed", e);
             connectionError(INTERNAL_ERROR, "internal error");
         }
     }
@@ -224,7 +224,7 @@ final class Http2ClientStage implements Stage {
         long quiet = System.nanoTime() - lastReceived;
         if (pingOutstanding) {
             if (quiet >= timeout) {
-                LOG.log(Logger.Level.DEBUG, "http/2 keep-alive ping unanswered for {0} ms: closing", quiet / 1_000_000);
+                LOG.debug("http/2 keep-alive ping unanswered for {} ms: closing", quiet / 1_000_000);
                 dead = true;
                 ctx.connection().close();
                 return;
@@ -1390,7 +1390,7 @@ final class Http2ClientStage implements Stage {
     }
 
     private void streamError(CStream s, int code, String why) {
-        LOG.log(Logger.Level.DEBUG, "http/2 stream {0} error {1}: {2}", s.id, code, why);
+        LOG.debug("http/2 stream {} error {}: {}", s.id, code, why);
         sendRst(s.id, code);
         failStream(s, new IOException(why), true);
     }
@@ -1400,7 +1400,7 @@ final class Http2ClientStage implements Stage {
             return;
         }
         dead = true;
-        LOG.log(Logger.Level.DEBUG, "http/2 client connection error {0}: {1}", code, why);
+        LOG.debug("http/2 client connection error {}: {}", code, why);
         byte[] d = why.getBytes(StandardCharsets.UTF_8);
         byte[] payload = new byte[8 + Math.min(d.length, 200)];
         System.arraycopy(int32(0), 0, payload, 0, 4);

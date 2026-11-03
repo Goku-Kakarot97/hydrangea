@@ -1,9 +1,12 @@
 package io.hydrangea.http;
 
+import io.hydrangea.log.LogContext;
+
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Maps method + path pattern to routes and exposes path variables and request parameters.
@@ -34,6 +37,15 @@ import java.util.concurrent.CompletionStage;
  * Register all routes before binding the server; routes are not meant to change while serving (registration is
  * safe, but a request may see either the old or the new table).
  * Routes run on the event loop: never block in them, use the {@code *Async} variants for slow work.
+ * <p>
+ * <b>Trace id.</b> Every request gets one: the trace id of a {@code traceparent} header (W3C Trace Context), else the value of
+ * {@code X-Trace-Id} or {@code X-Request-Id} when it is 1–64 characters of {@code [A-Za-z0-9._-]}, else 32 random hex digits.
+ * The route runs inside a {@link LogContext} scope holding it as {@code trace_id}, so every log line the route writes carries it
+ * (text output: {@code trace_id=...}; JSON: a {@code "trace_id"} key), the response gets an {@code X-Trace-Id} header, and the
+ * access log entry has it. The scope covers the route's own execution on the event loop; work that continues elsewhere (an
+ * {@code *Async} route completing on another thread, a callback) reopens it with {@link RouteRequest#traceId()} or
+ * {@link LogContext#wrap}. {@link #tracing(boolean)} turns this off. Responses are per request: a response object reused across
+ * requests would keep the first request's header.
  */
 public final class HttpRouter implements HttpHandler {
 
@@ -88,6 +100,12 @@ public final class HttpRouter implements HttpHandler {
     private volatile Node root = new Node();
     private final List<Entry> registrations = new ArrayList<>();
     private volatile AsyncRoute notFound = r -> CompletableFuture.completedFuture(HttpResponse.notFound());
+    private volatile boolean tracing = true;
+
+    /** The context key the trace id is logged under. */
+    public static final String TRACE_KEY = "trace_id";
+    /** The response header that carries the trace id back to the client. */
+    public static final String TRACE_HEADER = "X-Trace-Id";
 
     // ---- registration ----
 
@@ -189,6 +207,12 @@ public final class HttpRouter implements HttpHandler {
         return dispatch(head, body);
     }
 
+    /** Whether every request gets a trace id (on by default: see the class comment). */
+    public HttpRouter tracing(boolean on) {
+        this.tracing = on;
+        return this;
+    }
+
     /** Replaces the default plain-text 404. */
     public HttpRouter notFound(Route route) {
         this.notFound = r -> CompletableFuture.completedFuture(route.handle(r));
@@ -213,6 +237,54 @@ public final class HttpRouter implements HttpHandler {
 
     /** @param body the live request body for streaming dispatch, or null (then stream routes see an empty, completed body) */
     private CompletionStage<HttpResponse> dispatch(HttpRequest request, RequestBodyStream body) throws Exception {
+        if (!tracing) {
+            return dispatch(request, body, null);
+        }
+        String traceId = traceId(request.headers());
+        try (LogContext.Scope ignored = LogContext.with(TRACE_KEY, traceId)) {
+            return dispatch(request, body, traceId).thenApply(r -> {
+                if (r.headers().get(TRACE_HEADER) == null) {
+                    r.header(TRACE_HEADER, traceId);
+                }
+                return r;
+            });
+        }
+    }
+
+    /** The request's trace id: from the client when it sent a usable one, else new. */
+    static String traceId(Headers headers) {
+        String parent = headers.get("traceparent");
+        if (parent != null) {
+            // version-traceid-parentid-flags; the trace id is 32 hex digits and not all zeros
+            int a = parent.indexOf('-');
+            int b = a < 0 ? -1 : parent.indexOf('-', a + 1);
+            if (a == 2 && b == 35 && usable(parent, 3, 35) && !parent.startsWith("00000000000000000000000000000000", 3)) {
+                return parent.substring(3, 35);
+            }
+        }
+        String given = headers.get(TRACE_HEADER);
+        if (given == null) {
+            given = headers.get("X-Request-Id");
+        }
+        if (given != null && !given.isEmpty() && given.length() <= 64 && usable(given, 0, given.length())) {
+            return given;
+        }
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        return String.format("%016x%016x", random.nextLong(), random.nextLong());
+    }
+
+    private static boolean usable(String s, int from, int to) {
+        for (int i = from; i < to; i++) {
+            char c = s.charAt(i);
+            boolean ok = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '-' || c == '_' || c == '.';
+            if (!ok) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private CompletionStage<HttpResponse> dispatch(HttpRequest request, RequestBodyStream body, String traceId) throws Exception {
         String path = request.path();
         if (!path.startsWith("/")) {
             return done(HttpResponse.status(400).text("Bad Request"));
@@ -222,7 +294,7 @@ public final class HttpRouter implements HttpHandler {
             Lookup lookup = new Lookup(decoded, request.method());
             Entry e = search(root, 0, lookup);
             if (e != null) {
-                RouteRequest rr = new RouteRequest(request, variables(e, decoded));
+                RouteRequest rr = new RouteRequest(request, variables(e, decoded), traceId);
                 if (e.stream != null) {
                     return guard(e.stream.handle(rr, body != null ? body : EmptyBody.INSTANCE));
                 }
@@ -234,7 +306,7 @@ public final class HttpRouter implements HttpHandler {
                 }
                 return done(HttpResponse.status(405).header("Allow", String.join(", ", lookup.allowed)).text("Method Not Allowed"));
             }
-            return guard(notFound.handle(new RouteRequest(request, Map.of())));
+            return guard(notFound.handle(new RouteRequest(request, Map.of(), traceId)));
         } catch (HttpStatusException e) {
             return done(toResponse(e));
         }

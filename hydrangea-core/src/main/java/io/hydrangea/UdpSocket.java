@@ -1,8 +1,7 @@
 package io.hydrangea;
 
 import java.io.IOException;
-import java.lang.System.Logger;
-import java.lang.System.Logger.Level;
+import io.hydrangea.log.Logger;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.ProtocolFamily;
@@ -26,7 +25,7 @@ import java.util.concurrent.CompletionException;
  */
 public final class UdpSocket implements AutoCloseable {
 
-    private static final Logger LOG = System.getLogger(UdpSocket.class.getName());
+    private static final Logger LOG = Logger.get(UdpSocket.class);
     private static final int MAX_READS_PER_EVENT = 32;
 
     /** Receives datagrams on the socket's loop thread. {@code data} is only valid during the call. */
@@ -35,7 +34,7 @@ public final class UdpSocket implements AutoCloseable {
         void onDatagram(UdpSocket socket, SocketAddress sender, ByteBuffer data) throws Exception;
 
         default void onError(UdpSocket socket, Throwable error) {
-            LOG.log(Level.WARNING, "udp error on " + socket.localAddress(), error);
+            LOG.warn("udp error on " + socket.localAddress(), error);
         }
     }
 

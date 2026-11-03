@@ -4,8 +4,7 @@ import io.hydrangea.EventLoop;
 import io.hydrangea.Scheduled;
 import io.hydrangea.UdpSocket;
 
-import java.lang.System.Logger;
-import java.lang.System.Logger.Level;
+import io.hydrangea.log.Logger;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -25,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  */
 public final class QuicConnection {
 
-    private static final Logger LOG = System.getLogger(QuicConnection.class.getName());
+    private static final Logger LOG = Logger.get(QuicConnection.class);
 
     /** -Dquic.trace=true prints every packet and recovery event to stderr (development aid). */
     private static final boolean TRACE = Boolean.getBoolean("quic.trace");
@@ -414,7 +413,7 @@ public final class QuicConnection {
         } catch (Tls13Server.TlsAlert a) {
             startClosing(0x100 + a.alert, false, a.getMessage());
         } catch (RuntimeException e) {
-            LOG.log(Level.WARNING, "quic packet handling failed", e);
+            LOG.warn("quic packet handling failed", e);
             startClosing(INTERNAL_ERROR, false, "internal error");
         } finally {
             receiving = false;
@@ -721,7 +720,7 @@ public final class QuicConnection {
         try {
             handler.onClose(this, closeCode, closeApplication, closeReason);
         } catch (Throwable t) {
-            LOG.log(Level.WARNING, "onClose failed", t);
+            LOG.warn("onClose failed", t);
         }
     }
 
@@ -763,7 +762,7 @@ public final class QuicConnection {
         try {
             handler.onOpen(this);
         } catch (Throwable t) {
-            LOG.log(Level.WARNING, "onOpen failed", t);
+            LOG.warn("onOpen failed", t);
             startClosing(INTERNAL_ERROR, false, "internal error");
         }
     }
@@ -897,7 +896,7 @@ public final class QuicConnection {
         try {
             handler.onStreamData(this, id, data, fin);
         } catch (Throwable t) {
-            LOG.log(Level.WARNING, "onStreamData failed", t);
+            LOG.warn("onStreamData failed", t);
             startClosing(INTERNAL_ERROR, false, "internal error");
         }
     }
@@ -940,7 +939,7 @@ public final class QuicConnection {
             try {
                 handler.onStreamReset(this, id, code);
             } catch (Throwable t) {
-                LOG.log(Level.WARNING, "onStreamReset failed", t);
+                LOG.warn("onStreamReset failed", t);
             }
             maybeRetire(s);
         }
@@ -1290,7 +1289,7 @@ public final class QuicConnection {
             }
             flush();
         } catch (RuntimeException e) {
-            LOG.log(Level.WARNING, "quic timer failed", e);
+            LOG.warn("quic timer failed", e);
         }
         rearm();
     }
