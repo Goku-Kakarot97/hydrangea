@@ -5,7 +5,7 @@
 
     <groupId>io.github.goku-kakarot97</groupId>
     <artifactId>hydrangea-parent</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
     <packaging>pom</packaging>
     <name>Hydrangea</name>
     <description>Small, modern non-blocking network framework on top of Java NIO: a core, and protocol modules built on it</description>
@@ -32,7 +32,7 @@
         <connection>scm:git:https://github.com/Goku-Kakarot97/hydrangea.git</connection>
         <developerConnection>scm:git:git@github.com:Goku-Kakarot97/hydrangea.git</developerConnection>
         <url>https://github.com/Goku-Kakarot97/hydrangea</url>
-        <tag>v1.0.1</tag>
+        <tag>v1.0.2</tag>
     </scm>
 
     <issueManagement>

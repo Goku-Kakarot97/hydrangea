@@ -49,7 +49,7 @@ public final class OtlpSink implements TraceSink, AutoCloseable {
     private static final Logger log = Logger.get(OtlpSink.class);
 
     /** The version this sink reports as {@code telemetry.sdk.version}. */
-    static final String VERSION = "1.0.1";
+    static final String VERSION = "1.0.2";
 
     private final Exporter exporter;
     private final EventLoopGroup ownedGroup;

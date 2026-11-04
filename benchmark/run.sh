@@ -13,7 +13,7 @@ XNIO_CP="$XNIO_ROOT/api/target/classes:$XNIO_ROOT/nio-impl/target/classes"
 for j in org/jboss/logging/jboss-logging/3.4.3.Final/jboss-logging-3.4.3.Final.jar \
          org/jboss/threads/jboss-threads/2.3.6.Final/jboss-threads-2.3.6.Final.jar \
          org/wildfly/common/wildfly-common/1.5.4.Final/wildfly-common-1.5.4.Final.jar \
-         org/wildfly/client/wildfly-client-config/1.0.1.Final/wildfly-client-config-1.0.1.Final.jar; do
+         org/wildfly/client/wildfly-client-config/1.0.2.Final/wildfly-client-config-1.0.2.Final.jar; do
   XNIO_CP="$XNIO_CP:$M2/$j"
 done
 

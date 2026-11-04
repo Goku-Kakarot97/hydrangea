@@ -31,11 +31,11 @@ Maven Central, group `io.github.goku-kakarot97` (the Java packages stay `io.hydr
 <dependency>
     <groupId>io.github.goku-kakarot97</groupId>
     <artifactId>hydrangea-http</artifactId>      <!-- or hydrangea-grpc, -redis, -kafka, -mqtt, -amqp, -postgres, -mysql, -sql, -mongodb, -elasticsearch, -micrometer -->
-    <version>1.0.1</version>
+    <version>1.0.2</version>
 </dependency>
 ```
 
-Or straight from a tag through [JitPack](https://jitpack.io/#Goku-Kakarot97/hydrangea) (`com.github.Goku-Kakarot97.hydrangea:hydrangea-http:v1.0.1`).
+Or straight from a tag through [JitPack](https://jitpack.io/#Goku-Kakarot97/hydrangea) (`com.github.Goku-Kakarot97.hydrangea:hydrangea-http:v1.0.2`).
 
 ## Modules
 
