@@ -333,13 +333,27 @@ class SseTest {
     }
 
     @Test
-    void onlyGetIsAccepted() throws Exception {
-        Server server = start(SseConfig.defaults(), Probe::new);
+    void getAndPostAreAcceptedOtherMethodsAreNot() throws Exception {
+        Server server = start(SseConfig.defaults(), () -> new SseListener() {
+            @Override
+            public void onOpen(SseEmitter e) {
+                e.send("posted").thenRun(e::close);
+            }
+        });
         try (Socket s = new Socket("127.0.0.1", port(server))) {
             s.setSoTimeout(5000);
-            s.getOutputStream().write(("POST /events HTTP/1.1\r\nHost: x\r\nContent-Length: 0\r\nConnection: close\r\n\r\n").getBytes());
+            s.getOutputStream().write(("POST /events HTTP/1.1\r\nHost: x\r\nContent-Type: text/plain\r\nContent-Length: 5\r\nConnection: close\r\n\r\nhello").getBytes());
             String resp = new String(s.getInputStream().readAllBytes(), StandardCharsets.ISO_8859_1);
-            assertTrue(resp.startsWith("HTTP/1.1 405") && resp.contains("Allow: GET"), resp);
+            assertTrue(resp.startsWith("HTTP/1.1 200") && resp.contains("text/event-stream") && resp.contains("data: posted"), resp);
+        }
+        HttpRouter router = new HttpRouter().put("/events", r -> SseResponse.accept(r.request(), Probe::new));
+        Server put = HttpServer.bind(group, ANY, Options.defaults(), null, HttpConfig.defaults(), router);
+        cleanup.add(put);
+        try (Socket s = new Socket("127.0.0.1", port(put))) {
+            s.setSoTimeout(5000);
+            s.getOutputStream().write(("PUT /events HTTP/1.1\r\nHost: x\r\nContent-Length: 0\r\nConnection: close\r\n\r\n").getBytes());
+            String resp = new String(s.getInputStream().readAllBytes(), StandardCharsets.ISO_8859_1);
+            assertTrue(resp.startsWith("HTTP/1.1 405") && resp.contains("Allow: GET, POST"), resp);
         }
     }
 

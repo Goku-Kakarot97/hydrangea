@@ -161,6 +161,33 @@ class SseClientTest {
     }
 
     @Test
+    void postSubscriptionSendsMethodBodyAndHeadersAndStillGetsTheSseHeaders() throws Exception {
+        List<String> seen = new CopyOnWriteArrayList<>();
+        HttpRouter router = new HttpRouter().post("/chat", r -> {
+            seen.add(r.request().method() + " " + r.request().bodyAsString() + " accept=" + r.header("Accept") + " x=" + r.header("X-Api-Key"));
+            String prompt = r.request().bodyAsString();
+            return SseResponse.accept(r.request(), () -> new SseListener() {
+                @Override
+                public void onOpen(SseEmitter e) {
+                    for (String w : prompt.split(" ")) e.send(SseEvent.data(w).event("token"));
+                    e.close();
+                }
+            });
+        });
+        Server s = HttpServer.bind(serverGroup, ANY, router);
+        cleanup.add(s);
+        Rec rec = new Rec();
+        io.hydrangea.http.ClientRequest req = io.hydrangea.http.ClientRequest.post("http://127.0.0.1:" + ((InetSocketAddress) s.localAddress()).getPort() + "/chat")
+                .header("Content-Type", "text/plain").header("X-Api-Key", "k1").body("hello big world");
+        SseClient.subscribe(http(), req, SseClientConfig.defaults().withReconnect(false), rec);
+        assertTrue(rec.awaitMessages(3));
+        assertEquals(List.of("hello", "big", "world"), rec.data());
+        assertEquals("token", rec.messages.get(0).event());
+        assertTrue(rec.closed.await(5, TimeUnit.SECONDS));
+        assertEquals(List.of("POST hello big world accept=text/event-stream x=k1"), seen);
+    }
+
+    @Test
     void receivesTypedEventsWithIdsAndMultiLineData() throws Exception {
         Server server = sseServer(SseConfig.defaults(), () -> new SseListener() {
             @Override

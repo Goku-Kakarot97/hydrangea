@@ -15,6 +15,9 @@ import java.util.function.Supplier;
  * }</pre>
  * The returned response may be customised before it is returned (e.g. {@code .header("Access-Control-Allow-Origin", ...)}
  * for cross-origin browsers). The listener supplier is called once per accepted client.
+ * <p>
+ * GET is what a browser's {@code EventSource} sends; POST is accepted too, for APIs that take a request body and answer with
+ * a stream of events (a chat completion), read the body from {@code request.body()} before accepting. Other methods get 405.
  */
 public final class SseResponse {
 
@@ -26,8 +29,8 @@ public final class SseResponse {
     }
 
     public static HttpResponse accept(HttpRequest request, SseConfig config, Supplier<? extends SseListener> listener) {
-        if (!request.method().equals("GET")) {
-            return HttpResponse.status(405).header("Allow", "GET").text("Method Not Allowed");
+        if (!request.method().equals("GET") && !request.method().equals("POST")) {
+            return HttpResponse.status(405).header("Allow", "GET, POST").text("Method Not Allowed");
         }
         boolean chunked = request.version().equals("HTTP/1.1"); // HTTP/1.0 clients get a close-delimited body
         String lastEventId = request.headers().get("last-event-id");

@@ -48,15 +48,23 @@ public final class SseClient {
     }
 
     public static SseSubscription subscribe(HttpClient http, String url, SseClientConfig config, SseClientListener listener) {
-        ClientRequest.get(url); // validate the URL now, on the caller's thread
-        Subscription s = new Subscription(http, url, config, listener);
+        return subscribe(http, ClientRequest.get(url), config, listener);   // validates the URL now, on the caller's thread
+    }
+
+    /**
+     * Subscribes with a prepared request instead of a GET of a URL: the method, body and headers of {@code request} are sent as they
+     * are (plus {@code Accept: text/event-stream}, {@code Cache-Control: no-cache} and {@code Last-Event-ID} unless already set), for
+     * servers that start an event stream from a POST with a body. On reconnect the same request, body included, is sent again.
+     */
+    public static SseSubscription subscribe(HttpClient http, ClientRequest request, SseClientConfig config, SseClientListener listener) {
+        Subscription s = new Subscription(http, request, config, listener);
         s.connect();
         return s;
     }
 
     private static final class Subscription implements SseSubscription {
         private final HttpClient http;
-        private final String url;
+        private final ClientRequest template;
         private final SseClientConfig config;
         private final SseClientListener listener;
         private final AtomicBoolean closed = new AtomicBoolean();
@@ -70,9 +78,9 @@ public final class SseClient {
         private final io.hydrangea.Metrics.Count mEvents;
         private final io.hydrangea.Metrics.Count mReconnects;
 
-        Subscription(HttpClient http, String url, SseClientConfig config, SseClientListener listener) {
+        Subscription(HttpClient http, ClientRequest template, SseClientConfig config, SseClientListener listener) {
             this.http = http;
-            this.url = url;
+            this.template = template;
             this.config = config;
             this.listener = listener;
             this.retryMillis = config.defaultRetry().toMillis();
@@ -85,14 +93,18 @@ public final class SseClient {
             if (closed.get()) {
                 return;
             }
-            ClientRequest request = ClientRequest.get(url)
-                    .header("Accept", "text/event-stream")
-                    .header("Cache-Control", "no-cache");
+            ClientRequest request = template;
+            if (request.headers().get("accept") == null) {
+                request = request.header("Accept", "text/event-stream");
+            }
+            if (request.headers().get("cache-control") == null) {
+                request = request.header("Cache-Control", "no-cache");
+            }
             for (var h : config.headers().entrySet()) {
                 request = request.header(h.getKey(), h.getValue());
             }
             String id = lastEventId;
-            if (id != null) {
+            if (id != null && request.headers().get("last-event-id") == null) {
                 request = request.header("Last-Event-ID", id);
             }
             current = http.stream(request, new Attempt());
