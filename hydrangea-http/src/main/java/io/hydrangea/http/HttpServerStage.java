@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -488,6 +489,7 @@ public final class HttpServerStage implements Stage {
         if (!wanted) {
             return false;
         }
+        head = Observed.start(config.observer(), head);
         streamBody = true;
         streamHead = head;
         streamKeepAlive = keepAlive;
@@ -496,11 +498,14 @@ public final class HttpServerStage implements Stage {
         draining = false;
         sb = new StreamingBody(ctx, contentLength);
         CompletionStage<HttpResponse> stage;
+        Observed.handling(head);
         try {
             stage = handler.handleStreaming(head, sb);
         } catch (Throwable t) {
             LOG.warn("streaming handler threw for " + head.method() + " " + head.target(), t);
             stage = CompletableFuture.failedFuture(t);
+        } finally {
+            Observed.handled(head);
         }
         sb.registrationClosed = true;
         boolean alreadyAnswered = isDone(stage);
@@ -543,17 +548,17 @@ public final class HttpServerStage implements Stage {
             r = HttpResponse.status(500).text("Internal Server Error");
         }
         streamResponded = true;
-        answerStream(ctx, r, streamKeepAlive && err == null && resp != null);
+        answerStream(ctx, r, err instanceof CompletionException ce && ce.getCause() != null ? ce.getCause() : err, streamKeepAlive && err == null && resp != null);
     }
 
     /** Sends the response of the streamed request: normally if its body is complete, otherwise as an early response. */
-    private void answerStream(Context ctx, HttpResponse r, boolean keepAlive) {
+    private void answerStream(Context ctx, HttpResponse r, Throwable err, boolean keepAlive) {
         if (streamBodyDone) {
             HttpRequest head = streamHead;
             resetStream();
-            finish(ctx, head, r, keepAlive);
+            finish(ctx, head, r, err, keepAlive);
         } else {
-            earlyResponse(ctx, r);
+            earlyResponse(ctx, r, err);
         }
     }
 
@@ -569,7 +574,7 @@ public final class HttpServerStage implements Stage {
         try {
             ctx.connection().eventLoop().execute(() -> {
                 if (!closing && ctx.connection().isOpen()) {
-                    answerStream(ctx, HttpResponse.status(500).text("Internal Server Error"), false);
+                    answerStream(ctx, HttpResponse.status(500).text("Internal Server Error"), new IOException("request body listener failed"), false);
                 }
             });
         } catch (RuntimeException shutDown) {
@@ -582,7 +587,7 @@ public final class HttpServerStage implements Stage {
      * now; then a bounded amount of the remaining body is read and discarded before closing, because closing a socket
      * that still holds unread data makes the kernel send RST, which can destroy the response before the client reads it.
      */
-    private void earlyResponse(Context ctx, HttpResponse r) {
+    private void earlyResponse(Context ctx, HttpResponse r, Throwable err) {
         if (sb != null) {
             sb.abort(new IOException("a response was sent before the request body was fully received"));
         }
@@ -590,7 +595,7 @@ public final class HttpServerStage implements Stage {
         // An error (rejection) is announced as the end of the connection, which the client can rely on.
         drainKeepAlive = streamKeepAlive && r.status() < 400 && !shuttingDown;
         recordResponse(ctx, streamHead.method(), streamHead.target(), streamHead.version(), streamHead.headers().get("user-agent"), r.status(), r.body().length, r);
-        sendResponse(ctx, r, false, drainKeepAlive);
+        sendResponse(ctx, r, false, drainKeepAlive, Observed.ender(streamHead, r, err));
         draining = true;
         drainBudget = DRAIN_BUDGET;
         drainTimer = ctx.connection().eventLoop().schedule(() -> closeAfterFlush(ctx), DRAIN_MILLIS, TimeUnit.MILLISECONDS);
@@ -919,7 +924,7 @@ public final class HttpServerStage implements Stage {
     // ---- dispatch & response ----
 
     private void dispatch(Context ctx) {
-        HttpRequest request = new HttpRequest(method, target, version, headers, body.toByteArray());
+        HttpRequest request = Observed.start(config.observer(), new HttpRequest(method, target, version, headers, body.toByteArray()));
         if (config.http2() != null && negotiatedProtocol == null) { // never over TLS: RFC 7540 section 3.2 forbids upgrading there
             byte[] settings = h2cUpgradeSettings(request);
             if (settings != null) {
@@ -934,19 +939,28 @@ public final class HttpServerStage implements Stage {
         Connection c = ctx.connection();
         c.setAutoRead(false); // do not buffer pipelined requests beyond what is already read
         CompletionStage<HttpResponse> stage;
+        Throwable threw = null;
+        Observed.handling(request);
         try {
             stage = handler.handle(request);
         } catch (Throwable t) {
-            LOG.warn("handler threw for " + request.method() + " " + request.target(), t);
-            finish(ctx, request, null, ka);
+            threw = t;
+            stage = null;
+        } finally {
+            Observed.handled(request);
+        }
+        if (stage == null) {
+            LOG.warn("handler threw for " + request.method() + " " + request.target(), threw);
+            finish(ctx, request, null, threw, ka);
             return;
         }
         stage.whenComplete((resp, err) -> {
             if (err != null) {
                 LOG.warn("handler failed for " + request.method() + " " + request.target(), err);
             }
+            Throwable cause = err instanceof CompletionException ce && ce.getCause() != null ? ce.getCause() : err;
             try {
-                c.eventLoop().execute(() -> finish(ctx, request, err == null ? resp : null, ka));
+                c.eventLoop().execute(() -> finish(ctx, request, err == null ? resp : null, cause, ka));
             } catch (RuntimeException rejected) {
                 // loop shut down; connection is being torn down
             }
@@ -1000,8 +1014,14 @@ public final class HttpServerStage implements Stage {
     }
 
     private void finish(Context ctx, HttpRequest request, HttpResponse response, boolean ka) {
+        finish(ctx, request, response, null, ka);
+    }
+
+    /** @param err why the handler produced no response (then {@code response} is null and a 500 goes out), or null */
+    private void finish(Context ctx, HttpRequest request, HttpResponse response, Throwable err, boolean ka) {
         Connection c = ctx.connection();
         if (!c.isOpen()) {
+            Observed.end(Observed.of(request), null, err != null ? err : new IOException("connection closed before the response could be sent"));
             return;
         }
         Stage switchTo = null;
@@ -1023,7 +1043,7 @@ public final class HttpServerStage implements Stage {
         recordResponse(ctx, request.method(), request.target(), request.version(), request.headers().get("user-agent"), response.status(),
                 response.isStreaming() || response.status() == 101 || request.method().equals("HEAD") ? 0 : response.body().length, response);
         if (switchTo != null) {
-            sendResponse(ctx, response, false, true);
+            sendResponse(ctx, response, false, true, Observed.ender(request, response, err));
             upgraded = switchTo;
             busy = false;
             updateTimers(ctx); // protocol switched: HTTP deadlines no longer apply
@@ -1040,7 +1060,7 @@ public final class HttpServerStage implements Stage {
             }
             return;
         }
-        sendResponse(ctx, response, request.method().equals("HEAD"), ka);
+        sendResponse(ctx, response, request.method().equals("HEAD"), ka, Observed.ender(request, response, err));
         busy = false;
         if (!ka) {
             closing = true;
@@ -1082,8 +1102,12 @@ public final class HttpServerStage implements Stage {
 
     /** Writes through the pipeline (not straight to the connection) so a preceding TlsStage encrypts it. */
     private static void send(Context ctx, ByteBuffer data) {
+        send(ctx, data, null);
+    }
+
+    private static void send(Context ctx, ByteBuffer data, Runnable done) {
         try {
-            ctx.write(data);
+            ctx.write(data, done);
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -1095,9 +1119,14 @@ public final class HttpServerStage implements Stage {
     private static final int SEPARATE_BODY_BYTES = 16 * 1024;
 
     private static void sendResponse(Context ctx, HttpResponse r, boolean head, boolean keepAlive) {
+        sendResponse(ctx, r, head, keepAlive, null);
+    }
+
+    /** @param done runs once the last byte of the response has been handed to the socket (see {@link Context#write(Object, Runnable)}), or null */
+    private static void sendResponse(Context ctx, HttpResponse r, boolean head, boolean keepAlive, Runnable done) {
         ByteBuffer[] parts = serialize(r, head, keepAlive);
-        for (ByteBuffer part : parts) {
-            send(ctx, part);
+        for (int i = 0; i < parts.length; i++) {
+            send(ctx, parts[i], i == parts.length - 1 ? done : null);
         }
     }
 

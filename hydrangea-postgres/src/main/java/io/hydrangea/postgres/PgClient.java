@@ -83,6 +83,41 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class PgClient implements AutoCloseable {
 
+    private volatile io.hydrangea.observe.CallObserver<String, Object> observer;
+
+    /**
+     * Who is told about every statement run (its SQL text; the answer is a {@link PgResult} or, for {@code execute}, a list of them): {@code started} on the calling thread before it goes out, {@code ended} with the answer or the
+     * failure. The client records no span itself. {@code null} (the default) observes nothing.
+     */
+    public PgClient observer(io.hydrangea.observe.CallObserver<String, Object> observer) {
+        this.observer = observer;
+        return this;
+    }
+
+    private io.hydrangea.observe.CallObserver.Observation<Object> observe(String request) {
+        io.hydrangea.observe.CallObserver<String, Object> o = observer;
+        if (o == null) {
+            return null;
+        }
+        try {
+            return o.started(request);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    private static <A> void observed(java.util.concurrent.CompletableFuture<? extends A> f, io.hydrangea.observe.CallObserver.Observation<A> o) {
+        if (o != null) {
+            f.whenComplete((r, err) -> {
+                try {
+                    o.ended(r, err instanceof java.util.concurrent.CompletionException && err.getCause() != null ? err.getCause() : err);
+                } catch (Throwable ignored) {
+                    // an observer must not break the client
+                }
+            });
+        }
+    }
+
     private static final Logger LOG = Logger.get(PgClient.class);
 
     private enum State { CONNECTING, AUTH, ONLINE, OFFLINE, CLOSED }      // OFFLINE: lost, waiting for the next reconnect attempt
@@ -336,36 +371,11 @@ public final class PgClient implements AutoCloseable {
         Op op = new Op(false, sql, oids, values);
         op.params = kept;
         op.timeoutNanos = timeout == null ? 0 : timeout.toNanos();
-        io.hydrangea.trace.Span span = traceStart("pg.query", sql);
+        var observation = observe(sql);
         submit(op);
         @SuppressWarnings("unchecked")
         CompletableFuture<PgResult> f = (CompletableFuture<PgResult>) (CompletableFuture<?>) op.future;
-        return traceEnd(f, span);
-    }
-
-    /**
-     * A CLIENT span for one statement, child of the calling thread's current span (the route being served, for instance), with the
-     * OpenTelemetry database attributes; the statement text is cut at 1024 characters. Recorded only when a sink is bound.
-     */
-    private io.hydrangea.trace.Span traceStart(String name, String sql) {
-        io.hydrangea.trace.Span span = io.hydrangea.trace.Tracing.start(name, io.hydrangea.trace.Span.Kind.CLIENT);
-        if (span.isRecording()) {
-            span.attribute("db.system.name", "postgresql")
-                    .attribute("db.namespace", config.database())
-                    .attribute("server.address", config.host())
-                    .attribute("server.port", config.port())
-                    .attribute("db.query.text", sql.length() > 1024 ? sql.substring(0, 1024) : sql);
-        }
-        return span;
-    }
-
-    private static <T> CompletableFuture<T> traceEnd(CompletableFuture<T> f, io.hydrangea.trace.Span span) {
-        f.whenComplete((r, err) -> {
-            if (err != null) {
-                span.error(err instanceof java.util.concurrent.CompletionException && err.getCause() != null ? err.getCause() : err);
-            }
-            span.end();
-        });
+        observed(f, observation);
         return f;
     }
 
@@ -384,11 +394,12 @@ public final class PgClient implements AutoCloseable {
         }
         Op op = new Op(true, sql, null, null);
         op.timeoutNanos = timeout == null ? 0 : timeout.toNanos();
-        io.hydrangea.trace.Span span = traceStart("pg.execute", sql);
+        var observation = observe(sql);
         submit(op);
         @SuppressWarnings("unchecked")
         CompletableFuture<List<PgResult>> f = (CompletableFuture<List<PgResult>>) (CompletableFuture<?>) op.future;
-        return traceEnd(f, span);
+        observed(f, observation);
+        return f;
     }
 
     /**

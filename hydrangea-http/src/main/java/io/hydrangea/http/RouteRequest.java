@@ -1,7 +1,5 @@
 package io.hydrangea.http;
 
-import io.hydrangea.trace.Span;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -26,53 +24,34 @@ public final class RouteRequest {
 
     private final HttpRequest request;
     private final Map<String, String> pathVariables;
-    private final Span span;
+    private final String pattern;
     private Map<String, List<String>> params; // lazy
 
     RouteRequest(HttpRequest request, Map<String, String> pathVariables) {
         this(request, pathVariables, null);
     }
 
-    RouteRequest(HttpRequest request, Map<String, String> pathVariables, Span span) {
+    RouteRequest(HttpRequest request, Map<String, String> pathVariables, String pattern) {
         this.request = request;
         this.pathVariables = pathVariables;
-        this.span = span;
+        this.pattern = pattern;
     }
 
     public HttpRequest request() {
         return request;
     }
 
-    /**
-     * The request's server span (see {@link HttpRouter}): current while the route runs; reopen it in a callback with
-     * {@code try (var scope = r.span().makeCurrent()) { ... }}. {@code null} when tracing is off.
-     */
-    public Span span() {
-        return span;
-    }
-
-    /** The request's trace id: what the route's log lines carry as {@code trace_id}. {@code null} when tracing is off. */
-    public String traceId() {
-        return span == null ? null : span.context().traceId();
+    /** The route pattern this request matched ({@code /users/{id}}), or {@code null} for the not-found route: for naming a span. */
+    public String pattern() {
+        return pattern;
     }
 
     /**
-     * Reopens the request's span on the calling thread, for a callback that runs after the route returned (a future's continuation,
-     * a task on an executor): the span becomes current again and the log context gets {@code trace_id} and {@code span_id} back, until
-     * the scope closes. {@code try (var scope = r.traced()) { log.info("..."); db.query(...); }}. A no-op when tracing is off.
+     * What the server's observer returned for this request ({@link HttpConfig#withObserver}): the framework's own span or timer, so a
+     * route can parent its calls on it. {@code null} without an observer. The same object as {@link HttpRequest#attachment()}.
      */
-    public Span.Scope traced() {
-        if (span == null) {
-            return () -> { };
-        }
-        Span.Scope current = span.makeCurrent();
-        io.hydrangea.log.LogContext.Scope trace = io.hydrangea.log.LogContext.with(HttpRouter.TRACE_KEY, span.context().traceId());
-        io.hydrangea.log.LogContext.Scope spanId = io.hydrangea.log.LogContext.with(HttpRouter.SPAN_KEY, span.context().spanId());
-        return () -> {
-            spanId.close();
-            trace.close();
-            current.close();
-        };
+    public Object attachment() {
+        return request.attachment();
     }
 
     public String method() {

@@ -479,6 +479,8 @@ public final class Http3Server implements AutoCloseable {
         long contentLength = -1;
         long start;                      // the clock when the request was dispatched (0 = latency is not being recorded)
         final java.util.concurrent.atomic.AtomicBoolean inFlight = new java.util.concurrent.atomic.AtomicBoolean();
+        io.hydrangea.observe.CallObserver.Observation<HttpResponse> observation;   // HttpConfig.observer's, until ended
+        Throwable failure;
 
         Request(Conn conn, long id) {
             super(Math.max(config.maxHeaderBytes(), 1));
@@ -666,17 +668,30 @@ public final class Http3Server implements AutoCloseable {
                     respondError(501, "streaming handlers are not supported over HTTP/3 yet");
                     return;
                 }
-                stage = handler.handle(request);
             } catch (Throwable t) {
                 LOG.debug("http3 handler failed", t);
                 respondError(500, "Internal Server Error");
                 return;
+            }
+            request = Observed.start(config.observer(), request);
+            observation = Observed.of(request);
+            Observed.handling(request);
+            try {
+                stage = handler.handle(request);
+            } catch (Throwable t) {
+                LOG.debug("http3 handler failed", t);
+                failure = t;
+                respondError(500, "Internal Server Error");
+                return;
+            } finally {
+                Observed.handled(request);
             }
             responded = true;
             stage.whenComplete((resp, err) -> {
                 if (err != null || resp == null) {
                     if (err != null) {
                         LOG.debug("http3 handler failed", err);
+                        failure = err instanceof java.util.concurrent.CompletionException ce && ce.getCause() != null ? ce.getCause() : err;
                     }
                     send(HttpResponse.status(500).text("Internal Server Error"), method.equals("HEAD"));
                 } else if (resp.takeover() != null || resp.isHeadDeferred()) {
@@ -729,6 +744,11 @@ public final class Http3Server implements AutoCloseable {
                 out.write(bytes, 0, bytes.length);
             }
             conn.qc.send(id, out.toByteArray(), true);
+            var o = observation;
+            if (o != null) {
+                observation = null;
+                Observed.end(o, resp, failure);
+            }
         }
     }
 }

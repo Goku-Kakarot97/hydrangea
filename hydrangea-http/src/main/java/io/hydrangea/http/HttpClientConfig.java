@@ -1,5 +1,6 @@
 package io.hydrangea.http;
 
+import io.hydrangea.observe.CallObserver;
 import javax.net.ssl.SSLContext;
 import java.time.Duration;
 
@@ -37,7 +38,8 @@ public record HttpClientConfig(
         Http2ClientConfig http2,
         boolean decompress,
         ProxyConfig proxy,
-        CookieJar cookieJar) {
+        CookieJar cookieJar,
+        CallObserver<ClientRequest, ClientResponse> observer) {
 
     public HttpClientConfig {
         if (maxConnectionsPerHost < 1 || maxIdlePerHost < 0 || maxResponseBytes < 0 || maxHeaderBytes < 1 || maxRedirects < 0) {
@@ -50,7 +52,7 @@ public record HttpClientConfig(
                             int maxIdlePerHost, int maxResponseBytes, int maxHeaderBytes, int maxRedirects, SSLContext sslContext,
                             String userAgent) {
         this(connectTimeout, requestTimeout, idleTimeout, maxConnectionsPerHost, maxIdlePerHost, maxResponseBytes, maxHeaderBytes,
-                maxRedirects, sslContext, userAgent, null, false, null, null);
+                maxRedirects, sslContext, userAgent, null, false, null, null, null);
     }
 
     /** Settings with HTTP/2 but without decompression, proxy or cookies. */
@@ -58,7 +60,7 @@ public record HttpClientConfig(
                             int maxIdlePerHost, int maxResponseBytes, int maxHeaderBytes, int maxRedirects, SSLContext sslContext,
                             String userAgent, Http2ClientConfig http2) {
         this(connectTimeout, requestTimeout, idleTimeout, maxConnectionsPerHost, maxIdlePerHost, maxResponseBytes, maxHeaderBytes,
-                maxRedirects, sslContext, userAgent, http2, false, null, null);
+                maxRedirects, sslContext, userAgent, http2, false, null, null, null);
     }
 
     public static HttpClientConfig defaults() {
@@ -67,58 +69,66 @@ public record HttpClientConfig(
     }
 
     public HttpClientConfig withConnectTimeout(Duration d) {
-        return new HttpClientConfig(d, requestTimeout, idleTimeout, maxConnectionsPerHost, maxIdlePerHost, maxResponseBytes, maxHeaderBytes, maxRedirects, sslContext, userAgent, http2, decompress, proxy, cookieJar);
+        return new HttpClientConfig(d, requestTimeout, idleTimeout, maxConnectionsPerHost, maxIdlePerHost, maxResponseBytes, maxHeaderBytes, maxRedirects, sslContext, userAgent, http2, decompress, proxy, cookieJar, observer);
     }
 
     public HttpClientConfig withRequestTimeout(Duration d) {
-        return new HttpClientConfig(connectTimeout, d, idleTimeout, maxConnectionsPerHost, maxIdlePerHost, maxResponseBytes, maxHeaderBytes, maxRedirects, sslContext, userAgent, http2, decompress, proxy, cookieJar);
+        return new HttpClientConfig(connectTimeout, d, idleTimeout, maxConnectionsPerHost, maxIdlePerHost, maxResponseBytes, maxHeaderBytes, maxRedirects, sslContext, userAgent, http2, decompress, proxy, cookieJar, observer);
     }
 
     public HttpClientConfig withIdleTimeout(Duration d) {
-        return new HttpClientConfig(connectTimeout, requestTimeout, d, maxConnectionsPerHost, maxIdlePerHost, maxResponseBytes, maxHeaderBytes, maxRedirects, sslContext, userAgent, http2, decompress, proxy, cookieJar);
+        return new HttpClientConfig(connectTimeout, requestTimeout, d, maxConnectionsPerHost, maxIdlePerHost, maxResponseBytes, maxHeaderBytes, maxRedirects, sslContext, userAgent, http2, decompress, proxy, cookieJar, observer);
     }
 
     public HttpClientConfig withMaxConnectionsPerHost(int n) {
-        return new HttpClientConfig(connectTimeout, requestTimeout, idleTimeout, n, maxIdlePerHost, maxResponseBytes, maxHeaderBytes, maxRedirects, sslContext, userAgent, http2, decompress, proxy, cookieJar);
+        return new HttpClientConfig(connectTimeout, requestTimeout, idleTimeout, n, maxIdlePerHost, maxResponseBytes, maxHeaderBytes, maxRedirects, sslContext, userAgent, http2, decompress, proxy, cookieJar, observer);
     }
 
     public HttpClientConfig withMaxIdlePerHost(int n) {
-        return new HttpClientConfig(connectTimeout, requestTimeout, idleTimeout, maxConnectionsPerHost, n, maxResponseBytes, maxHeaderBytes, maxRedirects, sslContext, userAgent, http2, decompress, proxy, cookieJar);
+        return new HttpClientConfig(connectTimeout, requestTimeout, idleTimeout, maxConnectionsPerHost, n, maxResponseBytes, maxHeaderBytes, maxRedirects, sslContext, userAgent, http2, decompress, proxy, cookieJar, observer);
     }
 
     public HttpClientConfig withMaxResponseBytes(int n) {
-        return new HttpClientConfig(connectTimeout, requestTimeout, idleTimeout, maxConnectionsPerHost, maxIdlePerHost, n, maxHeaderBytes, maxRedirects, sslContext, userAgent, http2, decompress, proxy, cookieJar);
+        return new HttpClientConfig(connectTimeout, requestTimeout, idleTimeout, maxConnectionsPerHost, maxIdlePerHost, n, maxHeaderBytes, maxRedirects, sslContext, userAgent, http2, decompress, proxy, cookieJar, observer);
     }
 
     public HttpClientConfig withMaxRedirects(int n) {
-        return new HttpClientConfig(connectTimeout, requestTimeout, idleTimeout, maxConnectionsPerHost, maxIdlePerHost, maxResponseBytes, maxHeaderBytes, n, sslContext, userAgent, http2, decompress, proxy, cookieJar);
+        return new HttpClientConfig(connectTimeout, requestTimeout, idleTimeout, maxConnectionsPerHost, maxIdlePerHost, maxResponseBytes, maxHeaderBytes, n, sslContext, userAgent, http2, decompress, proxy, cookieJar, observer);
     }
 
     public HttpClientConfig withSslContext(SSLContext c) {
-        return new HttpClientConfig(connectTimeout, requestTimeout, idleTimeout, maxConnectionsPerHost, maxIdlePerHost, maxResponseBytes, maxHeaderBytes, maxRedirects, c, userAgent, http2, decompress, proxy, cookieJar);
+        return new HttpClientConfig(connectTimeout, requestTimeout, idleTimeout, maxConnectionsPerHost, maxIdlePerHost, maxResponseBytes, maxHeaderBytes, maxRedirects, c, userAgent, http2, decompress, proxy, cookieJar, observer);
+    }
+
+    /**
+     * Who is told about every request this client sends: {@code started} when it is handed to the client, {@code ended} when the
+     * response is in hand (for {@link HttpClient#stream}: its head) or the request failed. {@code null} (the default) observes nothing.
+     */
+    public HttpClientConfig withObserver(CallObserver<ClientRequest, ClientResponse> observer) {
+        return new HttpClientConfig(connectTimeout, requestTimeout, idleTimeout, maxConnectionsPerHost, maxIdlePerHost, maxResponseBytes, maxHeaderBytes, maxRedirects, sslContext, userAgent, http2, decompress, proxy, cookieJar, observer);
     }
 
     public HttpClientConfig withUserAgent(String ua) {
-        return new HttpClientConfig(connectTimeout, requestTimeout, idleTimeout, maxConnectionsPerHost, maxIdlePerHost, maxResponseBytes, maxHeaderBytes, maxRedirects, sslContext, ua, http2, decompress, proxy, cookieJar);
+        return new HttpClientConfig(connectTimeout, requestTimeout, idleTimeout, maxConnectionsPerHost, maxIdlePerHost, maxResponseBytes, maxHeaderBytes, maxRedirects, sslContext, ua, http2, decompress, proxy, cookieJar, observer);
     }
 
     /** Speaks HTTP/2 where the server does (see {@link Http2ClientConfig}). */
     public HttpClientConfig withHttp2(Http2ClientConfig config) {
-        return new HttpClientConfig(connectTimeout, requestTimeout, idleTimeout, maxConnectionsPerHost, maxIdlePerHost, maxResponseBytes, maxHeaderBytes, maxRedirects, sslContext, userAgent, config, decompress, proxy, cookieJar);
+        return new HttpClientConfig(connectTimeout, requestTimeout, idleTimeout, maxConnectionsPerHost, maxIdlePerHost, maxResponseBytes, maxHeaderBytes, maxRedirects, sslContext, userAgent, config, decompress, proxy, cookieJar, observer);
     }
 
     /** Asks for gzip/deflate and decodes the answer transparently (see the class comment). */
     public HttpClientConfig withDecompression(boolean on) {
-        return new HttpClientConfig(connectTimeout, requestTimeout, idleTimeout, maxConnectionsPerHost, maxIdlePerHost, maxResponseBytes, maxHeaderBytes, maxRedirects, sslContext, userAgent, http2, on, proxy, cookieJar);
+        return new HttpClientConfig(connectTimeout, requestTimeout, idleTimeout, maxConnectionsPerHost, maxIdlePerHost, maxResponseBytes, maxHeaderBytes, maxRedirects, sslContext, userAgent, http2, on, proxy, cookieJar, observer);
     }
 
     /** Sends requests through a forward proxy (see {@link ProxyConfig}); null = direct. */
     public HttpClientConfig withProxy(ProxyConfig proxy) {
-        return new HttpClientConfig(connectTimeout, requestTimeout, idleTimeout, maxConnectionsPerHost, maxIdlePerHost, maxResponseBytes, maxHeaderBytes, maxRedirects, sslContext, userAgent, http2, decompress, proxy, cookieJar);
+        return new HttpClientConfig(connectTimeout, requestTimeout, idleTimeout, maxConnectionsPerHost, maxIdlePerHost, maxResponseBytes, maxHeaderBytes, maxRedirects, sslContext, userAgent, http2, decompress, proxy, cookieJar, observer);
     }
 
     /** Keeps cookies between requests (see {@link CookieJar}); null = none. */
     public HttpClientConfig withCookieJar(CookieJar jar) {
-        return new HttpClientConfig(connectTimeout, requestTimeout, idleTimeout, maxConnectionsPerHost, maxIdlePerHost, maxResponseBytes, maxHeaderBytes, maxRedirects, sslContext, userAgent, http2, decompress, proxy, jar);
+        return new HttpClientConfig(connectTimeout, requestTimeout, idleTimeout, maxConnectionsPerHost, maxIdlePerHost, maxResponseBytes, maxHeaderBytes, maxRedirects, sslContext, userAgent, http2, decompress, proxy, jar, observer);
     }
 }

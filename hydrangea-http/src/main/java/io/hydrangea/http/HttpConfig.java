@@ -1,5 +1,7 @@
 package io.hydrangea.http;
 
+import io.hydrangea.observe.CallObserver;
+
 import java.time.Duration;
 
 /**
@@ -21,7 +23,8 @@ import java.time.Duration;
  *                         HTTP/2 preface and TLS connections that negotiate {@code h2} are served as HTTP/2.
  */
 public record HttpConfig(int maxHeaderBytes, int maxBodyBytes, Duration headerTimeout, Duration bodyTimeout,
-                         Duration keepAliveTimeout, AccessLog accessLog, Http2Config http2) {
+                         Duration keepAliveTimeout, AccessLog accessLog, Http2Config http2,
+                         CallObserver<HttpRequest, HttpResponse> observer) {
 
     public HttpConfig {
         if (maxHeaderBytes < 1 || maxBodyBytes < 0) {
@@ -30,13 +33,18 @@ public record HttpConfig(int maxHeaderBytes, int maxBodyBytes, Duration headerTi
     }
 
     public HttpConfig(int maxHeaderBytes, int maxBodyBytes, Duration headerTimeout, Duration bodyTimeout,
+                      Duration keepAliveTimeout, AccessLog accessLog, Http2Config http2) {
+        this(maxHeaderBytes, maxBodyBytes, headerTimeout, bodyTimeout, keepAliveTimeout, accessLog, http2, null);
+    }
+
+    public HttpConfig(int maxHeaderBytes, int maxBodyBytes, Duration headerTimeout, Duration bodyTimeout,
                       Duration keepAliveTimeout, AccessLog accessLog) {
-        this(maxHeaderBytes, maxBodyBytes, headerTimeout, bodyTimeout, keepAliveTimeout, accessLog, null);
+        this(maxHeaderBytes, maxBodyBytes, headerTimeout, bodyTimeout, keepAliveTimeout, accessLog, null, null);
     }
 
     /** Size limits with the default timeouts (10 s head, 30 s body, 60 s keep-alive). */
     public HttpConfig(int maxHeaderBytes, int maxBodyBytes) {
-        this(maxHeaderBytes, maxBodyBytes, Duration.ofSeconds(10), Duration.ofSeconds(30), Duration.ofSeconds(60), null, null);
+        this(maxHeaderBytes, maxBodyBytes, Duration.ofSeconds(10), Duration.ofSeconds(30), Duration.ofSeconds(60), null, null, null);
     }
 
     public static HttpConfig defaults() {
@@ -44,23 +52,32 @@ public record HttpConfig(int maxHeaderBytes, int maxBodyBytes, Duration headerTi
     }
 
     public HttpConfig withHeaderTimeout(Duration d) {
-        return new HttpConfig(maxHeaderBytes, maxBodyBytes, d, bodyTimeout, keepAliveTimeout, accessLog, http2);
+        return new HttpConfig(maxHeaderBytes, maxBodyBytes, d, bodyTimeout, keepAliveTimeout, accessLog, http2, observer);
     }
 
     public HttpConfig withBodyTimeout(Duration d) {
-        return new HttpConfig(maxHeaderBytes, maxBodyBytes, headerTimeout, d, keepAliveTimeout, accessLog, http2);
+        return new HttpConfig(maxHeaderBytes, maxBodyBytes, headerTimeout, d, keepAliveTimeout, accessLog, http2, observer);
     }
 
     public HttpConfig withKeepAliveTimeout(Duration d) {
-        return new HttpConfig(maxHeaderBytes, maxBodyBytes, headerTimeout, bodyTimeout, d, accessLog, http2);
+        return new HttpConfig(maxHeaderBytes, maxBodyBytes, headerTimeout, bodyTimeout, d, accessLog, http2, observer);
     }
 
     public HttpConfig withAccessLog(AccessLog log) {
-        return new HttpConfig(maxHeaderBytes, maxBodyBytes, headerTimeout, bodyTimeout, keepAliveTimeout, log, http2);
+        return new HttpConfig(maxHeaderBytes, maxBodyBytes, headerTimeout, bodyTimeout, keepAliveTimeout, log, http2, observer);
     }
 
     /** Serves HTTP/2 as well as HTTP/1.1 (see {@link #http2}). */
+    /**
+     * Who is told about every request this server handles, with {@link io.hydrangea.observe.CallObserver.Observation#ended ended} firing
+     * once the response has been handed to the socket (for a streaming response: its head). The observation rides on the request as
+     * {@link HttpRequest#attachment()}. {@code null} (the default) observes nothing.
+     */
+    public HttpConfig withObserver(CallObserver<HttpRequest, HttpResponse> observer) {
+        return new HttpConfig(maxHeaderBytes, maxBodyBytes, headerTimeout, bodyTimeout, keepAliveTimeout, accessLog, http2, observer);
+    }
+
     public HttpConfig withHttp2(Http2Config config) {
-        return new HttpConfig(maxHeaderBytes, maxBodyBytes, headerTimeout, bodyTimeout, keepAliveTimeout, accessLog, config);
+        return new HttpConfig(maxHeaderBytes, maxBodyBytes, headerTimeout, bodyTimeout, keepAliveTimeout, accessLog, config, observer);
     }
 }

@@ -104,6 +104,8 @@ final class Http2ServerStage implements Stage {
         long startNanos = System.nanoTime();
         boolean inFlight;               // counted in http.server.active until answered or closed
         Scheduled bodyTimer;
+        io.hydrangea.observe.CallObserver.Observation<HttpResponse> observation;   // HttpConfig.observer's, until ended
+        Throwable failure;              // why the handler produced no response, for the observation
 
         // response side: output queue drained by pump() within the flow-control windows
         final ArrayDeque<Out> outQ = new ArrayDeque<>();
@@ -1096,14 +1098,19 @@ final class Http2ServerStage implements Stage {
     // ---- running the application ----
 
     private void dispatch(Context ctx, Stream s) {
-        HttpRequest request = new HttpRequest(s.method, s.path, "HTTP/2", s.headers, s.body.toByteArray());
+        HttpRequest request = Observed.start(httpConfig.observer(), new HttpRequest(s.method, s.path, "HTTP/2", s.headers, s.body.toByteArray()));
+        s.observation = Observed.of(request);
         s.body = null;
         CompletionStage<HttpResponse> result;
+        Observed.handling(request);
         try {
             result = handler.handle(request);
         } catch (Throwable t) {
             LOG.warn("handler failed for " + s.path, t);
+            s.failure = t;
             result = CompletableFuture.completedFuture(HttpResponse.status(500).text("Internal Server Error"));
+        } finally {
+            Observed.handled(request);
         }
         deliverWhenDone(ctx, s, result);
     }
@@ -1120,6 +1127,7 @@ final class Http2ServerStage implements Stage {
                     Throwable cause = err instanceof java.util.concurrent.CompletionException ce && ce.getCause() != null ? ce.getCause() : err;
                     if (cause != null) {
                         LOG.warn("handler failed for " + s.path, cause);
+                        s.failure = cause;
                     }
                     r = HttpResponse.status(500).text("Internal Server Error");
                 }
@@ -1190,6 +1198,7 @@ final class Http2ServerStage implements Stage {
                 headerFrames(ctx, s.id, encoder.toByteArray(), false);
             }
             installTunnel(ctx, s, r);
+            observed(s, r);
             return;
         }
         boolean noData = s.headOnly || body.length == 0 || !bodyAllowed;
@@ -1199,15 +1208,26 @@ final class Http2ServerStage implements Stage {
                 dispatch(ctx, ps);
             }
         }
+        HttpResponse sent = r;
         if (noData) {
             s.endSent = true;
+            observed(s, sent);
             finishLocal(ctx, s);
         } else {
-            s.outQ.add(new Out(ByteBuffer.wrap(body), null));
+            s.outQ.add(new Out(ByteBuffer.wrap(body), () -> observed(s, sent)));
             s.outPending = body.length;
             s.outEnd = true;
             requeue(s);
             pump(ctx);
+        }
+    }
+
+    /** Ends the stream's observation, once: with the response, or with why it never got one. */
+    private static void observed(Stream s, HttpResponse r) {
+        var o = s.observation;
+        if (o != null) {
+            s.observation = null;
+            Observed.end(o, r, s.failure);
         }
     }
 
@@ -1562,14 +1582,20 @@ final class Http2ServerStage implements Stage {
         if (!wanted) {
             return false;
         }
+        head = Observed.start(httpConfig.observer(), head);
+        s.observation = Observed.of(head);
         StreamingBody sb = new StreamingBody(ctx, s);
         s.streaming = sb;
         CompletionStage<HttpResponse> result;
+        Observed.handling(head);
         try {
             result = handler.handleStreaming(head, sb);
         } catch (Throwable t) {
             LOG.warn("streaming handler failed for " + s.path, t);
+            s.failure = t;
             result = CompletableFuture.completedFuture(HttpResponse.status(500).text("Internal Server Error"));
+        } finally {
+            Observed.handled(head);
         }
         sb.registrationClosed = true;
         if (s.headers.hasToken("expect", "100-continue")) {
@@ -1979,6 +2005,10 @@ final class Http2ServerStage implements Stage {
         }
         s.closed = true;
         endInFlight(ctx, s);
+        if (s.observation != null) {
+            s.failure = new java.io.IOException("stream closed before the response: " + how);
+            observed(s, null);
+        }
         if (how == Closed.RESET_BY_PEER) {
             if (peerResets == null) {
                 peerResets = ctx.connection().eventLoop().metrics().counter("http2.resets", null, "by", "peer");

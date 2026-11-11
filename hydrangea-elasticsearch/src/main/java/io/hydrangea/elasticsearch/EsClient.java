@@ -46,6 +46,41 @@ import java.util.concurrent.atomic.AtomicLongArray;
  */
 public final class EsClient implements AutoCloseable {
 
+    private volatile io.hydrangea.observe.CallObserver<String, EsResponse> observer;
+
+    /**
+     * Who is told about every request (as {@code METHOD /path}; one per logical request, retries across nodes included): {@code started} on the calling thread before it goes out, {@code ended} with the answer or the
+     * failure. The client records no span itself. {@code null} (the default) observes nothing.
+     */
+    public EsClient observer(io.hydrangea.observe.CallObserver<String, EsResponse> observer) {
+        this.observer = observer;
+        return this;
+    }
+
+    private io.hydrangea.observe.CallObserver.Observation<EsResponse> observe(String request) {
+        io.hydrangea.observe.CallObserver<String, EsResponse> o = observer;
+        if (o == null) {
+            return null;
+        }
+        try {
+            return o.started(request);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    private static <A> void observed(java.util.concurrent.CompletableFuture<? extends A> f, io.hydrangea.observe.CallObserver.Observation<A> o) {
+        if (o != null) {
+            f.whenComplete((r, err) -> {
+                try {
+                    o.ended(r, err instanceof java.util.concurrent.CompletionException && err.getCause() != null ? err.getCause() : err);
+                } catch (Throwable ignored) {
+                    // an observer must not break the client
+                }
+            });
+        }
+    }
+
     private static final String JSON = "application/json";
     private static final String NDJSON = "application/x-ndjson";
     private static final int[] OK = {};
@@ -311,19 +346,8 @@ public final class EsClient implements AutoCloseable {
         long start = mDuration.begin();
         CompletableFuture<EsResponse> result = new CompletableFuture<>();
         Attempt a = new Attempt(method, target, body, contentType, encoding, result);
-        // one CLIENT span for the logical request however many nodes it takes; the HTTP requests carry its traceparent and get no span of their own
-        io.hydrangea.trace.Span span = io.hydrangea.trace.Tracing.start(method + " " + path, io.hydrangea.trace.Span.Kind.CLIENT);
-        a.traceparent = span.context().traceparent();
-        if (span.isRecording()) {
-            span.attribute("db.system.name", "elasticsearch").attribute("http.request.method", method).attribute("url.path", path);
-            result.whenComplete((r, err) -> {
-                if (err != null) {
-                    span.error(err instanceof CompletionException && err.getCause() != null ? err.getCause() : err);
-                } else if (r != null) {
-                    span.attribute("http.response.status_code", r.status());
-                }
-                span.end();
-            });
+        if (observer != null) {      // one observation for the logical request, however many nodes it takes
+            observed(result, observe(method + " " + path));
         }
         result.whenComplete((r, err) -> {
             mDuration.end(start);
@@ -363,7 +387,6 @@ public final class EsClient implements AutoCloseable {
         final byte[] body;
         final CompletableFuture<EsResponse> result;
         int[] acceptedErrors;
-        String traceparent;
         volatile CompletableFuture<ClientResponse> inFlight;
 
         Attempt(String method, String target, byte[] body, String contentType, String encoding, CompletableFuture<EsResponse> result) {
@@ -384,7 +407,7 @@ public final class EsClient implements AutoCloseable {
                 return;
             }
             int node = pickNode();
-            ClientRequest req = ClientRequest.of(method, nodes.get(node) + target).header("Accept", JSON).header("traceparent", traceparent);
+            ClientRequest req = ClientRequest.of(method, nodes.get(node) + target).header("Accept", JSON);
             if (config.authorization() != null) {
                 req = req.header("Authorization", config.authorization());
             }

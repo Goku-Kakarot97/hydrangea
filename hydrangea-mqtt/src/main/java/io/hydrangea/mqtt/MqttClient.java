@@ -43,6 +43,41 @@ import java.util.concurrent.TimeUnit;
  */
 public final class MqttClient implements AutoCloseable {
 
+    private volatile io.hydrangea.observe.CallObserver<String, Void> observer;
+
+    /**
+     * Who is told about every message published (its topic): {@code started} on the calling thread before it goes out, {@code ended} with the answer or the
+     * failure. The client records no span itself. {@code null} (the default) observes nothing.
+     */
+    public MqttClient observer(io.hydrangea.observe.CallObserver<String, Void> observer) {
+        this.observer = observer;
+        return this;
+    }
+
+    private io.hydrangea.observe.CallObserver.Observation<Void> observe(String request) {
+        io.hydrangea.observe.CallObserver<String, Void> o = observer;
+        if (o == null) {
+            return null;
+        }
+        try {
+            return o.started(request);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    private static <A> void observed(java.util.concurrent.CompletableFuture<? extends A> f, io.hydrangea.observe.CallObserver.Observation<A> o) {
+        if (o != null) {
+            f.whenComplete((r, err) -> {
+                try {
+                    o.ended(r, err instanceof java.util.concurrent.CompletionException && err.getCause() != null ? err.getCause() : err);
+                } catch (Throwable ignored) {
+                    // an observer must not break the client
+                }
+            });
+        }
+    }
+
     private static final Logger LOG = Logger.get(MqttClient.class);
 
     private enum State { CONNECTING, ONLINE, OFFLINE, CLOSED }
@@ -217,25 +252,10 @@ public final class MqttClient implements AutoCloseable {
      * a packet over its maximum size. A PUBACK or PUBREC with a failure reason code (not authorized, quota exceeded...) fails the future with that code.
      */
     public CompletableFuture<Void> publish(String topic, byte[] payload, QoS qos, boolean retain, MqttProperties properties) {
-        // a PRODUCER span, child of the calling thread's current span; with MQTT 5 the message carries traceparent as a user property (MQTT 3 has nowhere to put it)
-        io.hydrangea.trace.Span span = io.hydrangea.trace.Tracing.start(String.valueOf(topic) + " publish", io.hydrangea.trace.Span.Kind.PRODUCER);
-        if (span.isRecording()) {
-            span.attribute("messaging.system", "mqtt").attribute("messaging.destination.name", String.valueOf(topic)).attribute("messaging.operation.type", "send")
-                    .attribute("messaging.mqtt.qos", qos == null ? -1 : qos.level());
-        }
-        if (v5) {
-            MqttProperties p = properties == null ? MqttProperties.NONE : properties;
-            if (p.userProperties().stream().noneMatch(u -> "traceparent".equals(u.name()))) {
-                properties = p.withUserProperty("traceparent", span.context().traceparent());
-            }
-        }
         CompletableFuture<Void> f = publish0(topic, payload, qos, retain, properties);
-        f.whenComplete((r, err) -> {
-            if (err != null) {
-                span.error(err instanceof java.util.concurrent.CompletionException && err.getCause() != null ? err.getCause() : err);
-            }
-            span.end();
-        });
+        if (observer != null) {
+            observed(f, observe(String.valueOf(topic)));
+        }
         return f;
     }
 

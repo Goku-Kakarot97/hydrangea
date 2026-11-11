@@ -61,15 +61,30 @@ public final class Context {
 
     /** Sends {@code msg} towards the socket, through the stages before this one. */
     public void write(Object msg) throws Exception {
+        write(msg, null);
+    }
+
+    /**
+     * Like {@link #write(Object)}, and runs {@code done} on the loop thread once the bytes have left for the socket: fully handed to
+     * the connection (sent, or discarded because it closed). Stages between here and the socket pass it along; one that transforms
+     * the bytes (TLS) attaches it to the last of what it produces for this message. {@code null} for no callback.
+     */
+    public void write(Object msg, Runnable done) throws Exception {
         if (index == 0) {
             if (msg instanceof ByteBuffer b) {
-                connection().write(b);
+                if (done == null) {
+                    connection().write(b);
+                } else {
+                    connection().write(b, done);
+                }
             } else {
                 throw new IllegalArgumentException("pipeline head only accepts ByteBuffer, got " + msg.getClass().getName()
                         + " (is an encoder stage missing?)");
             }
-        } else {
+        } else if (done == null) {
             pipeline.stage(index - 1).onWrite(pipeline.context(index - 1), msg);
+        } else {
+            pipeline.stage(index - 1).onWrite(pipeline.context(index - 1), msg, done);
         }
     }
 

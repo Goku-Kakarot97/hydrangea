@@ -25,6 +25,16 @@ public interface Stage {
         ctx.write(msg);
     }
 
+    /**
+     * {@link #onWrite(Context, Object)} with a callback for when the bytes have left for the socket (see {@link Context#write(Object, Runnable)}).
+     * A stage that transforms bytes should override this and attach {@code done} to what it writes; this default forwards the message and
+     * runs {@code done} right away, which is right for a stage that only passes buffers on.
+     */
+    default void onWrite(Context ctx, Object msg, Runnable done) throws Exception {
+        onWrite(ctx, msg);
+        done.run();
+    }
+
     default void onWritabilityChanged(Context ctx) throws Exception {
         ctx.fireWritabilityChanged();
     }

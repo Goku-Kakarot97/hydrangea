@@ -12,21 +12,6 @@ public interface CallContext {
     /** The metadata the client sent. */
     Metadata requestMetadata();
 
-    /**
-     * The call's SERVER span (see {@link GrpcServer}): current while the handler is invoked; reopen it in a callback with
-     * {@code try (var scope = ctx.span().makeCurrent()) { ... }}. Never null on a server call.
-     */
-    default io.hydrangea.trace.Span span() {
-        return null;
-    }
-
-    /**
-     * Reopens the call's span on the calling thread (current span plus {@code trace_id}/{@code span_id} in the log context) until the
-     * scope closes, for callbacks that run after the handler returned: {@code try (var scope = ctx.traced()) { ... }}.
-     */
-    default io.hydrangea.trace.Span.Scope traced() {
-        return () -> { };
-    }
 
     /**
      * Metadata for the response's initial headers (a request id, a server version). Sent with the first response message, or with the status

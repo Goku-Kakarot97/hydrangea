@@ -43,6 +43,41 @@ import java.util.function.Function;
  */
 public final class MongoClient implements AutoCloseable {
 
+    private volatile io.hydrangea.observe.CallObserver<Map<String, Object>, Map<String, Object>> observer;
+
+    /**
+     * Who is told about every command run (the command document, whose first key is the operation and names the collection; the reply document comes back): {@code started} on the calling thread before it goes out, {@code ended} with the answer or the
+     * failure. The client records no span itself. {@code null} (the default) observes nothing.
+     */
+    public MongoClient observer(io.hydrangea.observe.CallObserver<Map<String, Object>, Map<String, Object>> observer) {
+        this.observer = observer;
+        return this;
+    }
+
+    private io.hydrangea.observe.CallObserver.Observation<Map<String, Object>> observe(Map<String, Object> request) {
+        io.hydrangea.observe.CallObserver<Map<String, Object>, Map<String, Object>> o = observer;
+        if (o == null) {
+            return null;
+        }
+        try {
+            return o.started(request);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    private static <A> void observed(java.util.concurrent.CompletableFuture<? extends A> f, io.hydrangea.observe.CallObserver.Observation<A> o) {
+        if (o != null) {
+            f.whenComplete((r, err) -> {
+                try {
+                    o.ended(r, err instanceof java.util.concurrent.CompletionException && err.getCause() != null ? err.getCause() : err);
+                } catch (Throwable ignored) {
+                    // an observer must not break the client
+                }
+            });
+        }
+    }
+
     private static final Logger LOG = Logger.get(MongoClient.class);
     private static final Duration TRANSACTION_RETRY_LIMIT = Duration.ofSeconds(120);
 
@@ -332,25 +367,20 @@ public final class MongoClient implements AutoCloseable {
         return runOn(db, command, kind).thenApply(Answer::reply);
     }
 
-    /** Every command is a CLIENT span named after the command and its collection ({@code find products}), child of the calling thread's current span. */
+    /** Every command is reported to the observer: the command document in, its reply out. */
     private CompletableFuture<Answer> runOn(String db, Map<String, Object> command, Kind kind) {
         CompletableFuture<Answer> out = new CompletableFuture<>();
-        String op = command.isEmpty() ? "command" : command.keySet().iterator().next();
-        Object target = command.isEmpty() ? null : command.get(op);
-        String collection = target instanceof String s ? s : null;
-        io.hydrangea.trace.Span span = io.hydrangea.trace.Tracing.start(collection == null ? op : op + " " + collection, io.hydrangea.trace.Span.Kind.CLIENT);
-        if (span.isRecording()) {
-            span.attribute("db.system.name", "mongodb").attribute("db.namespace", db).attribute("db.operation.name", op)
-                    .attribute("server.address", String.join(",", config.hosts()));
-            if (collection != null) {
-                span.attribute("db.collection.name", collection);
+        if (observer != null) {
+            var observation = observe(command);
+            if (observation != null) {
+                out.whenComplete((r, err) -> {
+                    try {
+                        observation.ended(r == null ? null : r.reply(), err instanceof CompletionException && err.getCause() != null ? err.getCause() : err);
+                    } catch (Throwable ignored) {
+                        // an observer must not break the client
+                    }
+                });
             }
-            out.whenComplete((r, err) -> {
-                if (err != null) {
-                    span.error(err instanceof CompletionException && err.getCause() != null ? err.getCause() : err);
-                }
-                span.end();
-            });
         }
         attempt(db, command, kind, false, out);
         return out;

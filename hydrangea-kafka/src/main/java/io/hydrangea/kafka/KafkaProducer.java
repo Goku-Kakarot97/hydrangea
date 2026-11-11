@@ -27,6 +27,41 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public final class KafkaProducer implements AutoCloseable {
 
+    private volatile io.hydrangea.observe.CallObserver<String, RecordMetadata> observer;
+
+    /**
+     * Who is told about every record sent (its topic): {@code started} on the calling thread before it goes out, {@code ended} with the answer or the
+     * failure. The client records no span itself. {@code null} (the default) observes nothing.
+     */
+    public KafkaProducer observer(io.hydrangea.observe.CallObserver<String, RecordMetadata> observer) {
+        this.observer = observer;
+        return this;
+    }
+
+    private io.hydrangea.observe.CallObserver.Observation<RecordMetadata> observe(String request) {
+        io.hydrangea.observe.CallObserver<String, RecordMetadata> o = observer;
+        if (o == null) {
+            return null;
+        }
+        try {
+            return o.started(request);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    private static <A> void observed(java.util.concurrent.CompletableFuture<? extends A> f, io.hydrangea.observe.CallObserver.Observation<A> o) {
+        if (o != null) {
+            f.whenComplete((r, err) -> {
+                try {
+                    o.ended(r, err instanceof java.util.concurrent.CompletionException && err.getCause() != null ? err.getCause() : err);
+                } catch (Throwable ignored) {
+                    // an observer must not break the client
+                }
+            });
+        }
+    }
+
     private final Cluster cluster;
     private final ProducerConfig config;
 
@@ -166,35 +201,14 @@ public final class KafkaProducer implements AutoCloseable {
 
     /** {@code partition} null lets the partitioner choose: the hash of the key (murmur2, as the Java client does), or, without a key, a partition kept until its batch is full. */
     /**
-     * Sends one record. The send is a PRODUCER span ({@code <topic> publish}), child of the calling thread's current span, and the
-     * record carries a {@code traceparent} header for it unless one was given, so the consumer can continue the trace
-     * ({@link ConsumerRecord#startProcessing()}).
+     * Sends one record. The producer adds no headers of its own: a caller that traces puts a {@code traceparent} header on the record
+     * itself, and times the send with the {@link #observer}.
      */
     public CompletableFuture<RecordMetadata> send(String topic, Integer partition, byte[] key, byte[] value, List<Header> headers) {
-        io.hydrangea.trace.Span span = io.hydrangea.trace.Tracing.start(topic + " publish", io.hydrangea.trace.Span.Kind.PRODUCER);
-        if (span.isRecording()) {
-            span.attribute("messaging.system", "kafka").attribute("messaging.destination.name", String.valueOf(topic)).attribute("messaging.operation.type", "send");
+        CompletableFuture<RecordMetadata> f = send0(topic, partition, key, value, headers == null ? List.of() : headers);
+        if (observer != null) {
+            observed(f, observe(topic));
         }
-        List<Header> hs = headers == null ? List.of() : headers;
-        boolean has = false;
-        for (Header h : hs) {
-            has |= "traceparent".equals(h.key());
-        }
-        if (!has) {
-            List<Header> withTrace = new java.util.ArrayList<>(hs.size() + 1);
-            withTrace.addAll(hs);
-            withTrace.add(new Header("traceparent", span.context().traceparent().getBytes(java.nio.charset.StandardCharsets.US_ASCII)));
-            hs = withTrace;
-        }
-        CompletableFuture<RecordMetadata> f = send0(topic, partition, key, value, hs);
-        f.whenComplete((meta, err) -> {
-            if (err != null) {
-                span.error(err instanceof java.util.concurrent.CompletionException && err.getCause() != null ? err.getCause() : err);
-            } else if (span.isRecording() && meta != null) {
-                span.attribute("messaging.destination.partition.id", String.valueOf(meta.partition())).attribute("messaging.kafka.offset", meta.offset());
-            }
-            span.end();
-        });
         return f;
     }
 

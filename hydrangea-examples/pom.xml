@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.github.goku-kakarot97</groupId>
         <artifactId>hydrangea-parent</artifactId>
-        <version>1.0.3</version>
+        <version>1.1.0</version>
     </parent>
 
     <artifactId>hydrangea-examples</artifactId>
@@ -94,11 +94,6 @@
         </dependency>
         <dependency>
             <groupId>io.github.goku-kakarot97</groupId>
-            <artifactId>hydrangea-otlp</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.github.goku-kakarot97</groupId>
             <artifactId>hydrangea-core</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
@@ -148,7 +143,6 @@
                                 <resource><directory>${project.basedir}/../hydrangea-elasticsearch/target/classes</directory></resource>
                                 <resource><directory>${project.basedir}/../hydrangea-mongodb/target/classes</directory></resource>
                                 <resource><directory>${project.basedir}/../hydrangea-log/target/classes</directory></resource>
-                                <resource><directory>${project.basedir}/../hydrangea-otlp/target/classes</directory></resource>
                                 <resource><directory>${project.build.outputDirectory}</directory></resource>
                             </resources>
                         </configuration>

@@ -50,6 +50,41 @@ import java.util.function.Function;
  */
 public final class RedisClient implements AutoCloseable {
 
+    private volatile io.hydrangea.observe.CallObserver<String, Object> observer;
+
+    /**
+     * Who is told about every command sent (its name, such as {@code GET}): {@code started} on the calling thread before it goes out, {@code ended} with the answer or the
+     * failure. The client records no span itself. {@code null} (the default) observes nothing.
+     */
+    public RedisClient observer(io.hydrangea.observe.CallObserver<String, Object> observer) {
+        this.observer = observer;
+        return this;
+    }
+
+    private io.hydrangea.observe.CallObserver.Observation<Object> observe(String request) {
+        io.hydrangea.observe.CallObserver<String, Object> o = observer;
+        if (o == null) {
+            return null;
+        }
+        try {
+            return o.started(request);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    private static <A> void observed(java.util.concurrent.CompletableFuture<? extends A> f, io.hydrangea.observe.CallObserver.Observation<A> o) {
+        if (o != null) {
+            f.whenComplete((r, err) -> {
+                try {
+                    o.ended(r, err instanceof java.util.concurrent.CompletionException && err.getCause() != null ? err.getCause() : err);
+                } catch (Throwable ignored) {
+                    // an observer must not break the client
+                }
+            });
+        }
+    }
+
     private static final Logger LOG = Logger.get(RedisClient.class);
 
     private enum State { CONNECTING, ONLINE, OFFLINE, CLOSED }
@@ -158,17 +193,8 @@ public final class RedisClient implements AutoCloseable {
             return CompletableFuture.failedFuture(e);
         }
         Cmd c = new Cmd(bytes, new CompletableFuture<>(), convert, null);
-        // a CLIENT span per command, child of the calling thread's current span: the command name only, never its arguments (keys and values may be sensitive)
-        String name = args.length > 0 && args[0] instanceof String s ? s.toUpperCase(java.util.Locale.ROOT) : "redis.command";
-        io.hydrangea.trace.Span span = io.hydrangea.trace.Tracing.start(name, io.hydrangea.trace.Span.Kind.CLIENT);
-        if (span.isRecording()) {
-            span.attribute("db.system.name", "redis").attribute("db.operation.name", name).attribute("server.address", config.host()).attribute("server.port", config.port());
-            c.future.whenComplete((r, err) -> {
-                if (err != null) {
-                    span.error(err instanceof java.util.concurrent.CompletionException && err.getCause() != null ? err.getCause() : err);
-                }
-                span.end();
-            });
+        if (observer != null) {      // the command name only, never its arguments: keys and values may be sensitive
+            observed(c.future, observe(args.length > 0 && args[0] instanceof String s ? s.toUpperCase(java.util.Locale.ROOT) : "redis.command"));
         }
         submit(c);
         return (CompletableFuture<T>) c.future;

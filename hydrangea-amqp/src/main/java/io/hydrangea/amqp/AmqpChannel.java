@@ -22,6 +22,41 @@ import java.util.function.Function;
  */
 public final class AmqpChannel {
 
+    private volatile io.hydrangea.observe.CallObserver<String, Void> observer;
+
+    /**
+     * Who is told about every message published (its exchange and routing key as {@code exchange/key}, or the key alone for the default exchange): {@code started} on the calling thread before it goes out, {@code ended} with the answer or the
+     * failure. The client records no span itself. {@code null} (the default) observes nothing.
+     */
+    public AmqpChannel observer(io.hydrangea.observe.CallObserver<String, Void> observer) {
+        this.observer = observer;
+        return this;
+    }
+
+    private io.hydrangea.observe.CallObserver.Observation<Void> observe(String request) {
+        io.hydrangea.observe.CallObserver<String, Void> o = observer;
+        if (o == null) {
+            return null;
+        }
+        try {
+            return o.started(request);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    private static <A> void observed(java.util.concurrent.CompletableFuture<? extends A> f, io.hydrangea.observe.CallObserver.Observation<A> o) {
+        if (o != null) {
+            f.whenComplete((r, err) -> {
+                try {
+                    o.ended(r, err instanceof java.util.concurrent.CompletionException && err.getCause() != null ? err.getCause() : err);
+                } catch (Throwable ignored) {
+                    // an observer must not break the client
+                }
+            });
+        }
+    }
+
     private static final Logger LOG = Logger.get(AmqpChannel.class);
 
     /** The answer to a queue declaration. */
@@ -368,20 +403,7 @@ public final class AmqpChannel {
      */
     public CompletableFuture<Void> basicPublish(String exchange, String routingKey, boolean mandatory, BasicProperties properties, byte[] body) {
         BasicProperties props = properties == null ? BasicProperties.EMPTY : properties;
-        // a PRODUCER span, child of the calling thread's current span; the message carries traceparent in its headers unless the caller set one (Delivery.startProcessing continues it)
-        io.hydrangea.trace.Span span = io.hydrangea.trace.Tracing.start((exchange.isEmpty() ? routingKey : exchange) + " publish", io.hydrangea.trace.Span.Kind.PRODUCER);
-        if (span.isRecording()) {
-            span.attribute("messaging.system", "rabbitmq").attribute("messaging.destination.name", exchange).attribute("messaging.rabbitmq.destination.routing_key", routingKey)
-                    .attribute("messaging.operation.type", "send");
-        }
-        if (props.headers() == null || !props.headers().containsKey("traceparent")) {
-            Map<String, Object> h = new java.util.LinkedHashMap<>();
-            if (props.headers() != null) {
-                h.putAll(props.headers());
-            }
-            h.put("traceparent", span.context().traceparent());
-            props = props.withHeaders(h);
-        }
+        var observation = observer == null ? null : observe(exchange.isEmpty() ? routingKey : exchange + "/" + routingKey);
         int max = conn.frameMax() - 8;
         Wire.Writer method = new Wire.Writer(64).shortInt(60).shortInt(40).shortInt(0).shortStr(exchange).shortStr(routingKey).bits(mandatory, false);
         Wire.Writer header = new Wire.Writer(64).shortInt(60).shortInt(0).longLong(body.length);
@@ -395,6 +417,7 @@ public final class AmqpChannel {
             out.octet(AmqpConnection.FRAME_BODY).shortInt(id).longInt(n).raw(body, off, n).octet(AmqpConnection.FRAME_END);
         }
         Publish f = new Publish();
+        observed(f, observation);
         conn.onLoop(() -> {
             if (!isOpen()) {
                 mFailed.increment();
@@ -416,12 +439,6 @@ public final class AmqpChannel {
             } else {
                 f.complete(null);
             }
-        });
-        f.whenComplete((r, err) -> {
-            if (err != null) {
-                span.error(err instanceof java.util.concurrent.CompletionException && err.getCause() != null ? err.getCause() : err);
-            }
-            span.end();
         });
         return f;
     }

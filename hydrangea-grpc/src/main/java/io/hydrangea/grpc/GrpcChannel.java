@@ -494,15 +494,7 @@ public final class GrpcChannel implements Channel, AutoCloseable {
 
     private <Req, Resp> ClientCall<Req, Resp> startWithRetry(MethodDescriptor<Req, Resp> method, CallOptions options, ClientCall.Listener<Resp> listener) {
         channelz.calls.start();
-        // the call is a CLIENT span, child of the calling thread's current span, and carries traceparent in its metadata unless the caller set one
-        final io.hydrangea.trace.Span span = io.hydrangea.trace.Tracing.start(method.fullName(), io.hydrangea.trace.Span.Kind.CLIENT);
-        if (span.isRecording()) {
-            span.attribute("rpc.system", "grpc").attribute("rpc.service", method.serviceName()).attribute("rpc.method", method.methodName())
-                    .attribute("server.address", host);
-        }
-        if (options.metadata().get("traceparent") == null) {
-            options = options.withMetadata(options.metadata().copy().put("traceparent", span.context().traceparent()));
-        }
+        // no span and no trace metadata here: a caller that traces puts traceparent in the metadata itself and times the call with a ClientInterceptor
         final ClientCall.Listener<Resp> reported = listener;
         listener = new ClientCall.Listener<>() {
             @Override
@@ -518,13 +510,6 @@ public final class GrpcChannel implements Channel, AutoCloseable {
             @Override
             public void onClose(Status status, Metadata trailers) {
                 channelz.calls.end(status.isOk());
-                if (span.isRecording()) {
-                    span.attribute("rpc.grpc.status_code", status.code().value());
-                    if (!status.isOk()) {
-                        span.error(status.code() + (status.description() == null ? "" : ": " + status.description()));
-                    }
-                }
-                span.end();
                 reported.onClose(status, trailers);
             }
         };

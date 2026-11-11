@@ -70,6 +70,41 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class MyClient implements AutoCloseable {
 
+    private volatile io.hydrangea.observe.CallObserver<String, MyResult> observer;
+
+    /**
+     * Who is told about every statement run (its SQL text): {@code started} on the calling thread before it goes out, {@code ended} with the answer or the
+     * failure. The client records no span itself. {@code null} (the default) observes nothing.
+     */
+    public MyClient observer(io.hydrangea.observe.CallObserver<String, MyResult> observer) {
+        this.observer = observer;
+        return this;
+    }
+
+    private io.hydrangea.observe.CallObserver.Observation<MyResult> observe(String request) {
+        io.hydrangea.observe.CallObserver<String, MyResult> o = observer;
+        if (o == null) {
+            return null;
+        }
+        try {
+            return o.started(request);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    private static <A> void observed(java.util.concurrent.CompletableFuture<? extends A> f, io.hydrangea.observe.CallObserver.Observation<A> o) {
+        if (o != null) {
+            f.whenComplete((r, err) -> {
+                try {
+                    o.ended(r, err instanceof java.util.concurrent.CompletionException && err.getCause() != null ? err.getCause() : err);
+                } catch (Throwable ignored) {
+                    // an observer must not break the client
+                }
+            });
+        }
+    }
+
     private static final Logger LOG = Logger.get(MyClient.class);
 
     // capability flags
@@ -467,27 +502,21 @@ public final class MyClient implements AutoCloseable {
         return submitOp(op);
     }
 
-    /** Every statement is a CLIENT span ({@code my.query}, {@code my.stream}), child of the calling thread's current span, with the database attributes. */
+    /** Every statement with SQL text is reported to the observer; a streamed statement ends when its stream is ready. */
     private CompletableFuture<MyResult> submitOp(Op op) {
-        if (op.sql == null) {
+        if (op.sql == null || observer == null) {
             return submitOp0(op);
         }
-        io.hydrangea.trace.Span span = io.hydrangea.trace.Tracing.start(op.kind == Kind.STREAM ? "my.stream" : "my.query", io.hydrangea.trace.Span.Kind.CLIENT);
-        if (span.isRecording()) {
-            span.attribute("db.system.name", "mysql").attribute("db.namespace", config.database()).attribute("server.address", config.host())
-                    .attribute("server.port", config.port()).attribute("db.query.text", op.sql.length() > 1024 ? op.sql.substring(0, 1024) : op.sql);
-        }
+        var observation = observe(op.sql);
         CompletableFuture<MyResult> f = submitOp0(op);
-        CompletableFuture<?> done = op.future != null ? op.future : op.streamReady;
-        if (done == null) {
-            span.end();
-        } else {
-            done.whenComplete((r, err) -> {
-                if (err != null) {
-                    span.error(err instanceof java.util.concurrent.CompletionException && err.getCause() != null ? err.getCause() : err);
-                }
-                span.end();
-            });
+        if (observation != null) {
+            if (op.future != null) {
+                observed(op.future, observation);
+            } else if (op.streamReady != null) {
+                op.streamReady.whenComplete((r, err) -> observation.ended(null, err instanceof java.util.concurrent.CompletionException && err.getCause() != null ? err.getCause() : err));
+            } else {
+                observation.ended(null, null);
+            }
         }
         return f;
     }

@@ -36,7 +36,6 @@ final class ServerCall<Req, Resp> implements Stage, HalfCloseListener, CallConte
 
     private final MethodDescriptor<Req, Resp> method;
     private final Object handler;
-    private io.hydrangea.trace.Span span = io.hydrangea.trace.Tracing.propagating(null);
     private final HttpRequest head;
     private final Metadata requestMetadata;
     private final Duration timeout;
@@ -119,12 +118,7 @@ final class ServerCall<Req, Resp> implements Stage, HalfCloseListener, CallConte
             deadline = Instant.now().plus(timeout);
             deadlineTimer = ctx.connection().eventLoop().schedule(this::deadlineExceeded, timeout.toNanos(), TimeUnit.NANOSECONDS);
         }
-        span = io.hydrangea.trace.Tracing.start(method.fullName(), io.hydrangea.trace.Span.Kind.SERVER,
-                io.hydrangea.trace.SpanContext.parse(requestMetadata.get("traceparent")));
-        if (span.isRecording()) {
-            span.attribute("rpc.system", "grpc").attribute("rpc.service", method.serviceName()).attribute("rpc.method", method.methodName());
-        }
-        try (io.hydrangea.trace.Span.Scope ignored = traced()) {
+        try {
             for (ServerInterceptor i : interceptors) {
                 ServerInterceptor.Listener l = i.start(method, this);
                 if (l != null) {
@@ -155,28 +149,9 @@ final class ServerCall<Req, Resp> implements Stage, HalfCloseListener, CallConte
 
     @SuppressWarnings("unchecked")
     private StreamObserver<Req> invokeStreaming() throws Exception {
-        try (io.hydrangea.trace.Span.Scope ignored = traced()) {
-            return ((GrpcServer.StreamingHandler<Req, Resp>) handler).call(this, new Responses());
-        }
+        return ((GrpcServer.StreamingHandler<Req, Resp>) handler).call(this, new Responses());
     }
 
-    /** Makes the call's span current and puts its ids in the log context, for as long as the handler runs on this thread. */
-    @Override
-    public io.hydrangea.trace.Span.Scope traced() {
-        io.hydrangea.trace.Span.Scope current = span.makeCurrent();
-        io.hydrangea.log.LogContext.Scope trace = io.hydrangea.log.LogContext.with(io.hydrangea.trace.Tracing.TRACE_ID, span.context().traceId());
-        io.hydrangea.log.LogContext.Scope spanId = io.hydrangea.log.LogContext.with(io.hydrangea.trace.Tracing.SPAN_ID, span.context().spanId());
-        return () -> {
-            spanId.close();
-            trace.close();
-            current.close();
-        };
-    }
-
-    @Override
-    public io.hydrangea.trace.Span span() {
-        return span;
-    }
 
     @Override
     public void onRead(Context ctx, Object msg) {
@@ -266,7 +241,7 @@ final class ServerCall<Req, Resp> implements Stage, HalfCloseListener, CallConte
         if (isDone()) {
             return;
         }
-        try (io.hydrangea.trace.Span.Scope ignored = traced()) {
+        try {
             if (method.type() == MethodDescriptor.MethodType.UNARY) {
                 CompletionStage<Resp> result = ((GrpcServer.UnaryHandler<Req, Resp>) handler).call(singleRequest, this);
                 result.whenComplete((resp, err) -> {
@@ -449,13 +424,6 @@ final class ServerCall<Req, Resp> implements Stage, HalfCloseListener, CallConte
             socketStats.lastActiveNanos = System.nanoTime();
         }
         notifyListeners(l -> l.onClose(status));
-        if (span.isRecording()) {
-            span.attribute("rpc.grpc.status_code", status.code().value());
-            if (!status.isOk()) {
-                span.error(status.code() + (status.description() == null ? "" : ": " + status.description()));
-            }
-        }
-        span.end();
     }
 
     private void cancelTimer() {

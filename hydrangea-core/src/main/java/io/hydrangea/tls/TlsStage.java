@@ -157,6 +157,23 @@ public final class TlsStage implements Stage {
     }
 
     @Override
+    public void onWrite(Context ctx, Object msg, Runnable done) throws Exception {
+        ByteBuffer b = (ByteBuffer) msg;
+        pendingPlain.add(b);
+        if (b.hasRemaining()) {
+            pendingDone.add(new Done(b, done));
+        } else {
+            done.run();
+        }
+        pump();
+    }
+
+    /** A write callback waiting for its plain buffer to be wrapped; it fires with the record that carries the buffer's last byte. */
+    private record Done(ByteBuffer plain, Runnable done) { }
+
+    private final ArrayDeque<Done> pendingDone = new ArrayDeque<>();
+
+    @Override
     public void onClose(Context ctx, Throwable cause) {
         if (!activated && metrics != null) {
             metrics.counter("tls.handshakes", null, "result", "failed").increment();   // closed before the handshake finished: refused, timed out, or cut off
@@ -165,6 +182,10 @@ public final class TlsStage implements Stage {
             handshakeTimer.cancel();
         }
         netIn.release();
+        Done d;
+        while ((d = pendingDone.poll()) != null) {
+            d.done.run();                   // the bytes will never go out; the callback still owes its caller a call
+        }
         ctx.fireClose(cause);
     }
 
@@ -285,20 +306,41 @@ public final class TlsStage implements Stage {
         }
         out.flip();
         boolean produced = out.hasRemaining();
+        Runnable done = armedCallbacks();
         if (produced) {
             try {
-                ctx.write(copyOut(out));
+                ctx.write(copyOut(out), done);
             } catch (SSLException e) {
                 throw e;
             } catch (Exception e) {
                 throw new SSLException(e);
             }
+        } else if (done != null) {
+            done.run();
         }
         if (r.getStatus() == SSLEngineResult.Status.CLOSED) {
             closeRequested = true;
         }
         noteHandshake(r);
         return produced || r.bytesConsumed() > 0;
+    }
+
+    /** The callbacks of every pending plain buffer the engine has fully consumed, as one runnable, or null when there are none. */
+    private Runnable armedCallbacks() {
+        Done d;
+        java.util.List<Runnable> fired = null;
+        while ((d = pendingDone.peek()) != null && !d.plain.hasRemaining()) {
+            pendingDone.poll();
+            if (fired == null) {
+                fired = new java.util.ArrayList<>(2);
+            }
+            fired.add(d.done);
+        }
+        if (fired == null) {
+            return null;
+        }
+        java.util.List<Runnable> all = fired;
+        return () -> all.forEach(Runnable::run);
     }
 
     private boolean wrap(ByteBuffer src) throws SSLException {
