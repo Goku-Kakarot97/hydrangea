@@ -12,7 +12,8 @@ import java.time.Duration;
  * @param connectionWindowSize    the same for the whole connection
  * @param maxFrameSize            largest frame payload we accept (16384 to 16777215)
  * @param headerTableSize         HPACK dynamic table the client's encoder may use
- * @param maxResetsPerSecond      RST_STREAM frames tolerated per second before the connection is dropped (the "rapid reset" attack)
+ * @param maxResetsPerSecond      stream resets tolerated per second before the connection is dropped: the client's RST_STREAM frames
+ *                                (the "rapid reset" attack) and the resets its protocol errors make the server send ("MadeYouReset")
  * @param maxControlFramesPerSecond PING, SETTINGS, RST_STREAM, PRIORITY and empty DATA frames tolerated per second (floods that cost
  *                                the server work or output but carry nothing)
  */

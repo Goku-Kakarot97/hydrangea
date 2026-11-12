@@ -805,6 +805,7 @@ public final class HttpServerStage implements Stage {
     private boolean readChunkSize(ByteBuffer in) {
         int eol = indexOf(in, in.position(), "\r\n");
         if (eol < 0) {
+            rejectBareLf(in);
             if (in.remaining() > MAX_CHUNK_LINE) {
                 throw new HttpException(400, "Bad Request");
             }
@@ -816,20 +817,7 @@ public final class HttpServerStage implements Stage {
         byte[] raw = new byte[eol - in.position()];
         in.get(raw);
         in.position(in.position() + 2);
-        String line = new String(raw, StandardCharsets.ISO_8859_1);
-        int semi = line.indexOf(';'); // chunk extensions are ignored
-        String hex = (semi < 0 ? line : line.substring(0, semi)).trim();
-        if (hex.isEmpty() || hex.length() > 15) {
-            throw new HttpException(400, "Bad Request");
-        }
-        long size = 0;
-        for (int i = 0; i < hex.length(); i++) {
-            int d = Character.digit(hex.charAt(i), 16);
-            if (d < 0) {
-                throw new HttpException(400, "Bad Request");
-            }
-            size = size * 16 + d;
-        }
+        long size = parseChunkLine(new String(raw, StandardCharsets.ISO_8859_1));
         if (!streamBody && body.size() + size > config.maxBodyBytes()) {
             throw new HttpException(413, "Payload Too Large");
         }
@@ -841,6 +829,71 @@ public final class HttpServerStage implements Stage {
             state = State.CHUNK_DATA;
         }
         return true;
+    }
+
+    /**
+     * Parses a chunk-size line without its CRLF: {@code 1*HEXDIG *( BWS ";" BWS token [ BWS "=" BWS ( token / quoted-string ) ] )}
+     * (RFC 9112 §7.1.1), trailing SP / HTAB tolerated. Extensions are checked, then ignored. Anything else (leading whitespace, a bare
+     * CR or LF, control bytes, a malformed extension) is a 400: a peer that ends the line elsewhere would frame the body differently.
+     */
+    private static long parseChunkLine(String line) {
+        int n = line.length();
+        int i = 0;
+        while (i < n && Character.digit(line.charAt(i), 16) >= 0) {
+            i++;
+        }
+        if (i == 0 || i > 15) {
+            throw new HttpException(400, "Bad Request");
+        }
+        long size = Long.parseLong(line, 0, i, 16);
+        while ((i = skipWs(line, i)) < n) {
+            if (line.charAt(i) != ';') {
+                throw new HttpException(400, "Bad Request");
+            }
+            i = skipToken(line, skipWs(line, i + 1));
+            int eq = skipWs(line, i);
+            if (eq < n && line.charAt(eq) == '=') {
+                i = skipWs(line, eq + 1);
+                i = i < n && line.charAt(i) == '"' ? skipQuoted(line, i) : skipToken(line, i);
+            }
+        }
+        return size;
+    }
+
+    private static int skipWs(String s, int i) {
+        while (i < s.length() && (s.charAt(i) == ' ' || s.charAt(i) == '\t')) {
+            i++;
+        }
+        return i;
+    }
+
+    /** @return the index after a non-empty token starting at {@code i} */
+    private static int skipToken(String s, int i) {
+        int start = i;
+        while (i < s.length() && isTokenChar(s.charAt(i))) {
+            i++;
+        }
+        if (i == start) {
+            throw new HttpException(400, "Bad Request");
+        }
+        return i;
+    }
+
+    /** @return the index after the quoted-string whose opening DQUOTE is at {@code i} (no control bytes but HTAB, inside or escaped) */
+    private static int skipQuoted(String s, int i) {
+        for (i++; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '"') {
+                return i + 1;
+            }
+            if (c == '\\' && ++i < s.length()) {
+                c = s.charAt(i);
+            }
+            if ((c < 0x20 && c != '\t') || c == 0x7f) {
+                throw new HttpException(400, "Bad Request");
+            }
+        }
+        throw new HttpException(400, "Bad Request"); // unterminated (or ends in a lone backslash)
     }
 
     private boolean readChunkData(ByteBuffer in) {
@@ -871,6 +924,7 @@ public final class HttpServerStage implements Stage {
     private boolean readTrailers(Context ctx, ByteBuffer in) throws Exception {
         int eol = indexOf(in, in.position(), "\r\n");
         if (eol < 0) {
+            rejectBareLf(in);
             if (in.remaining() + trailerBytes > config.maxHeaderBytes()) {
                 throw new HttpException(431, "Request Header Fields Too Large");
             }
@@ -880,6 +934,12 @@ public final class HttpServerStage implements Stage {
         trailerBytes += len + 2;
         if (trailerBytes > config.maxHeaderBytes()) {
             throw new HttpException(431, "Request Header Fields Too Large");
+        }
+        for (int i = in.position(); i < eol; i++) {
+            int c = in.get(i) & 0xff;
+            if ((c < 0x20 && c != '\t') || c == 0x7f) {
+                throw new HttpException(400, "Bad Request"); // bare CR / LF or another control byte: a peer may end the line here
+            }
         }
         in.position(eol + 2); // trailer fields are read and discarded
         if (len == 0) {
@@ -905,6 +965,15 @@ public final class HttpServerStage implements Stage {
         byte[] tmp = new byte[n];
         in.get(tmp);
         body.write(tmp, 0, n);
+    }
+
+    /** For a line with no CRLF yet buffered: any LF in it is bare, so do not wait for a terminator that never comes (as in parseHead). */
+    private static void rejectBareLf(ByteBuffer in) {
+        for (int i = in.position(); i < in.limit(); i++) {
+            if (in.get(i) == '\n') {
+                throw new HttpException(400, "Bad Request");
+            }
+        }
     }
 
     private static int indexOf(ByteBuffer in, int from, String needle) {

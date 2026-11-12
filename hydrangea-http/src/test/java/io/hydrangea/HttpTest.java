@@ -256,11 +256,23 @@ class HttpTest {
                     "GET  /hello HTTP/1.1\r\nHost: x\r\n\r\n",                        // double space
                     "BAD\r\n\r\n",
                     "POST /echo HTTP/1.1\r\nHost: x\r\nTransfer-Encoding: chunked\r\n\r\nZZ\r\n",   // bad chunk size
+                    "POST /echo HTTP/1.1\r\nHost: x\r\nTransfer-Encoding: chunked\r\n\r\n2;\nxx\r\n0\r\n\r\n",  // bare LF in chunk extension
+                    "POST /echo HTTP/1.1\r\nHost: x\r\nTransfer-Encoding: chunked\r\n\r\n2;\nxx",               // ...even before any CRLF
+                    "POST /echo HTTP/1.1\r\nHost: x\r\nTransfer-Encoding: chunked\r\n\r\n2;a\rb\r\nxx\r\n0\r\n\r\n", // bare CR in chunk extension
+                    "POST /echo HTTP/1.1\r\nHost: x\r\nTransfer-Encoding: chunked\r\n\r\n2;a=\"\0\"\r\nxx\r\n0\r\n\r\n", // control byte in quoted ext
+                    "POST /echo HTTP/1.1\r\nHost: x\r\nTransfer-Encoding: chunked\r\n\r\n2;a b\r\nxx\r\n0\r\n\r\n", // malformed chunk extension
+                    "POST /echo HTTP/1.1\r\nHost: x\r\nTransfer-Encoding: chunked\r\n\r\n 2\r\nxx\r\n0\r\n\r\n",    // leading whitespace in size
+                    "POST /echo HTTP/1.1\r\nHost: x\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n\nGET /hello HTTP/1.1\r\n\r\n", // bare LF in trailers
+                    "POST /echo HTTP/1.1\r\nHost: x\r\nTransfer-Encoding: chunked\r\n\r\n0\r\nX: a\nb",           // ...even before any CRLF
+                    "POST /echo HTTP/1.1\r\nHost: x\r\nTransfer-Encoding: chunked\r\n\r\n0\r\nX: a\rb\r\n\r\n",    // bare CR in a trailer
             };
             for (String req : bad) {
                 String out = raw(p, req);
                 assertTrue(out.startsWith("HTTP/1.1 400"), "expected 400 for " + req.replace("\r", "\\r").replace("\n", "\\n") + " but got: " + out);
             }
+            String ok = raw(p, "POST /echo HTTP/1.1\r\nHost: x\r\nConnection: close\r\nTransfer-Encoding: chunked\r\n\r\n"
+                    + "2 ; a = b ;q=\"x \\\" y\"\r\nhi\r\n1;e\r\n!\r\n0\r\nX-T: v\r\n\r\n"); // well-formed extensions and trailers
+            assertTrue(ok.startsWith("HTTP/1.1 200") && ok.endsWith("hi!"), ok);
             assertTrue(raw(p, "POST /echo HTTP/1.1\r\nHost: x\r\nTransfer-Encoding: gzip\r\n\r\n").startsWith("HTTP/1.1 501"));
             assertTrue(raw(p, "GET / HTTP/2.0\r\nHost: x\r\n\r\n").startsWith("HTTP/1.1 505"));
         }

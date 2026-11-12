@@ -44,8 +44,8 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * What it enforces: frame sizes and stream state rules, both levels of flow control, the header block rules (pseudo-headers, lower
  * case names, no connection-specific fields, Content-Length against the body), bounds on the header block and the decoded header
- * list, a limit on concurrent streams, and rate limits on RST_STREAM (rapid reset) and on frames that cost work but carry nothing
- * (PING, SETTINGS, PRIORITY, empty DATA).
+ * list, a limit on concurrent streams, and rate limits on stream resets (the client's RST_STREAM, rapid reset, and the resets its
+ * protocol errors make us send, MadeYouReset) and on frames that cost work but carry nothing (PING, SETTINGS, PRIORITY, empty DATA).
  */
 final class Http2ServerStage implements Stage {
 
@@ -556,12 +556,12 @@ final class Http2ServerStage implements Stage {
             return; // closed: late window updates are harmless
         }
         if (inc == 0) {
-            streamError(ctx, s.id, PROTOCOL_ERROR);
+            peerStreamError(ctx, s.id, PROTOCOL_ERROR);
             return;
         }
         s.sendWindow += inc;
         if (s.sendWindow > MAX_WINDOW) {
-            streamError(ctx, s.id, FLOW_CONTROL_ERROR);
+            peerStreamError(ctx, s.id, FLOW_CONTROL_ERROR);
             return;
         }
         requeue(s);
@@ -577,11 +577,11 @@ final class Http2ServerStage implements Stage {
         if (sid == 0) {
             connectionError(ctx, PROTOCOL_ERROR, "PRIORITY on stream 0");
         } else if (p.length != 5) {
-            streamError(ctx, sid, FRAME_SIZE_ERROR);
+            peerStreamError(ctx, sid, FRAME_SIZE_ERROR);
         } else if (floodControl(ctx)) {
             // dropped
         } else if (((p[0] & 0x7f) << 24 | (p[1] & 0xff) << 16 | (p[2] & 0xff) << 8 | (p[3] & 0xff)) == sid) {
-            streamError(ctx, sid, PROTOCOL_ERROR); // a stream cannot depend on itself
+            peerStreamError(ctx, sid, PROTOCOL_ERROR); // a stream cannot depend on itself
         }
         // priorities themselves are deprecated (RFC 9113 section 5.3) and not used
     }
@@ -652,11 +652,11 @@ final class Http2ServerStage implements Stage {
             return; // answered already; the reset that finishes the response is on its way
         }
         if (s.remoteClosed) {
-            streamError(ctx, sid, STREAM_CLOSED);
+            peerStreamError(ctx, sid, STREAM_CLOSED);
             return;
         }
         if (p.length > s.recvWindow) {
-            streamError(ctx, sid, FLOW_CONTROL_ERROR);
+            peerStreamError(ctx, sid, FLOW_CONTROL_ERROR);
             return;
         }
         s.recvWindow -= p.length;
@@ -667,7 +667,7 @@ final class Http2ServerStage implements Stage {
         }
         s.received += n;
         if (s.declaredLength >= 0 && s.received > s.declaredLength) {
-            streamError(ctx, sid, PROTOCOL_ERROR); // more body than Content-Length announced
+            peerStreamError(ctx, sid, PROTOCOL_ERROR); // more body than Content-Length announced
             return;
         }
         if (s.tunnel != null) {
@@ -688,7 +688,7 @@ final class Http2ServerStage implements Stage {
                 s.early = new ByteArrayOutputStream();
             }
             if (s.early.size() + n > MAX_EARLY_TUNNEL_BYTES) {
-                streamError(ctx, sid, ENHANCE_YOUR_CALM);
+                peerStreamError(ctx, sid, ENHANCE_YOUR_CALM);
                 return;
             }
             s.early.write(p, off, n);
@@ -710,7 +710,7 @@ final class Http2ServerStage implements Stage {
             s.remoteClosed = true;
             cancel(s.bodyTimer);
             if (s.declaredLength >= 0 && s.received != s.declaredLength) {
-                streamError(ctx, sid, PROTOCOL_ERROR);
+                peerStreamError(ctx, sid, PROTOCOL_ERROR);
                 return;
             }
             if (s.tunnelRequest || s.bidi) {
@@ -841,7 +841,7 @@ final class Http2ServerStage implements Stage {
         Stream existing = streams.get(sid);
         if (reject != 0) {
             if (existing != null) {
-                streamError(ctx, sid, reject);
+                peerStreamError(ctx, sid, reject);
             } else {
                 sendRst(ctx, sid, reject);
                 recentlyClosed.put(sid, Closed.RESET_BY_US);
@@ -855,13 +855,13 @@ final class Http2ServerStage implements Stage {
         }
         if (existing != null) { // trailers
             if (tooLarge || !validTrailers(headers)) {
-                streamError(ctx, sid, PROTOCOL_ERROR);
+                peerStreamError(ctx, sid, PROTOCOL_ERROR);
                 return;
             }
             existing.remoteClosed = true;
             cancel(existing.bodyTimer);
             if (existing.declaredLength >= 0 && existing.received != existing.declaredLength) {
-                streamError(ctx, sid, PROTOCOL_ERROR);
+                peerStreamError(ctx, sid, PROTOCOL_ERROR);
                 return;
             }
             if (existing.tunnelRequest || existing.bidi) {
@@ -887,7 +887,7 @@ final class Http2ServerStage implements Stage {
             return;
         }
         if (!buildRequestHead(s, headers)) {
-            streamError(ctx, sid, PROTOCOL_ERROR);
+            peerStreamError(ctx, sid, PROTOCOL_ERROR);
             return;
         }
         if (s.tunnelRequest) {
@@ -905,7 +905,7 @@ final class Http2ServerStage implements Stage {
         if (endStream) {
             s.remoteClosed = true;
             if (s.declaredLength > 0) {
-                streamError(ctx, sid, PROTOCOL_ERROR); // announced a body, sent none
+                peerStreamError(ctx, sid, PROTOCOL_ERROR); // announced a body, sent none
                 return;
             }
             dispatch(ctx, s);
@@ -2033,6 +2033,16 @@ final class Http2ServerStage implements Stage {
             } else {
                 armIdle(ctx);
             }
+        }
+    }
+
+    /**
+     * A stream error the client's own frames provoked. It frees the stream's slot just as a client RST_STREAM does while the handler
+     * may still be running ("MadeYouReset"), so it is charged to the same rapid-reset budget; over budget the connection is dropped.
+     */
+    private void peerStreamError(Context ctx, int sid, int code) {
+        if (!rapidReset(ctx)) {
+            streamError(ctx, sid, code);
         }
     }
 

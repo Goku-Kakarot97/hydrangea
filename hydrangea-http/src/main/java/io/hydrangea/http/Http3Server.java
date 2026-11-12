@@ -313,6 +313,9 @@ public final class Http3Server implements AutoCloseable {
                         unis.put(id, u);
                     }
                     u.feed(data, fin);
+                    if (fin) {
+                        unis.remove(id);   // finished, and QUIC delivers nothing more for it (a critical stream has already failed the connection)
+                    }
                 } else {
                     throw new H3Error(H3_STREAM_CREATION_ERROR, "stream " + id + " is server initiated");
                 }

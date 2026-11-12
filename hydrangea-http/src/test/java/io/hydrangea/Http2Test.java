@@ -655,6 +655,29 @@ class Http2Test {
     }
 
     @Test
+    void resetsTheClientProvokesAreCutOffToo() throws Exception {
+        // "MadeYouReset": a zero WINDOW_UPDATE makes the server reset the stream itself, freeing its slot while the handler runs on
+        Http2Config strict = Http2Config.defaults().withLimits(50, 5000);
+        try (Server server = server(HttpConfig.defaults().withHttp2(strict), handler()); Peer p = Peer.connect(port(server)).handshake()) {
+            try {
+                for (int i = 0; i < 300; i++) {
+                    int sid = 1 + 2 * i;
+                    p.get(sid, "/slow");
+                    p.windowUpdate(sid, 0);
+                }
+            } catch (IOException serverGaveUp) {
+                // fine
+            }
+            Frame f;
+            do {
+                f = p.next();
+            } while (f.type() != GOAWAY && f.type() != EOF.type());
+            assertEquals(GOAWAY, f.type());
+            assertEquals(ENHANCE_YOUR_CALM, f.errorCode());
+        }
+    }
+
+    @Test
     void aFloodOfPingsIsCutOff() throws Exception {
         Http2Config strict = Http2Config.defaults().withLimits(100, 100);
         try (Server server = server(HttpConfig.defaults().withHttp2(strict), handler()); Peer p = Peer.connect(port(server)).handshake()) {
