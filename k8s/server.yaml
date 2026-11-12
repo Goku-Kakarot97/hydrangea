@@ -14,7 +14,7 @@ spec:
       terminationGracePeriodSeconds: 40
       containers:
         - name: server
-          image: eclipse-temurin:21-jre
+          image: eclipse-temurin:25-jre
           command: ["java", "-Xms256m", "-Xmx512m", "-Dhealth.interval.sec=30", "-Dshutdown.grace.sec=20", "-cp", "/jars/hydrangea.jar:/jars/bench.jar",
                     "servers.HydrangeaHttpServer", "8080", "2", "0.0.0.0"]
           ports: [{containerPort: 8080}]

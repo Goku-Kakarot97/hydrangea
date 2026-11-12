@@ -13,7 +13,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: load
-          image: eclipse-temurin:21-jre
+          image: eclipse-temurin:25-jre
           command: ["/bin/sh", "-c"]
           args:
             - |

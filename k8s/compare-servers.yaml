@@ -16,7 +16,7 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
         - name: server
-          image: eclipse-temurin:21-jre
+          image: eclipse-temurin:25-jre
           command: ["java", "-Xms512m", "-Xmx512m", "-XX:+UseG1GC", "-cp", "/jars/hydrangea.jar:/jars/bench.jar", "servers.HydrangeaHttpServer", "8080", "2", "0.0.0.0"]
           ports: [{containerPort: 8080}]
           resources:
@@ -44,7 +44,7 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
         - name: server
-          image: eclipse-temurin:21-jre
+          image: eclipse-temurin:25-jre
           command: ["java", "-Xms512m", "-Xmx512m", "-XX:+UseG1GC", "-cp", "/jars/bench.jar:/jars/hydrangea.jar:/n1/*:/n2/*:/n3/*:/n4/*", "servers.NettyHttpServer", "8080", "2", "0.0.0.0"]
           ports: [{containerPort: 8080}]
           resources:

@@ -14,7 +14,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: "25"
           cache: maven
       # Tests that need a broker or a database skip themselves when the service is not there (JUnit assumptions); the protocol,
       # fuzz and security tests run in full. Docker services for the rest: hydrangea-*/src/test/resources/*/start-*.sh.

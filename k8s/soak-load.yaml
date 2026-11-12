@@ -15,7 +15,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: load
-          image: eclipse-temurin:21-jre
+          image: eclipse-temurin:25-jre
           command: ["java", "-Xmx384m", "-cp", "/jars/hydrangea.jar:/jars/bench.jar", "h2.SoakLoad", "hydrangea-soak-server.iris.svc.cluster.local", "8080", "60"]
           resources:
             requests: {cpu: "1", memory: 512Mi}

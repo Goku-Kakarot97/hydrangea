@@ -1,6 +1,6 @@
 # Hydrangea
 
-Framework mạng non-blocking nhỏ gọn trên Java NIO (Java 21, không phụ thuộc thư viện ngoài). Xem `REVIEW.md` để biết lý do thiết kế so với XNIO.
+Framework mạng non-blocking nhỏ gọn trên Java NIO (Java 25, không phụ thuộc thư viện ngoài). Xem `REVIEW.md` để biết lý do thiết kế so với XNIO.
 
 ```java
 try (var group = new EventLoopGroup()) {

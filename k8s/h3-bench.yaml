@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: server
-          image: eclipse-temurin:21-jre
+          image: eclipse-temurin:25-jre
           command: ["/bin/sh", "-c", "exec java -Xms192m -Xmx256m -cp /jars/hydrangea.jar io.hydrangea.examples.Http3Example 4433 /certs/k.p12 changeit srv 0.0.0.0"]
           ports: [{containerPort: 4433, protocol: UDP}]
           resources:

@@ -14,12 +14,12 @@ spec:
     spec:
       initContainers:
         - name: deps
-          image: eclipse-temurin:21-jre
+          image: eclipse-temurin:25-jre
           command: ["/bin/sh", "-c", "mkdir -p /deps && cd /deps && while read p; do curl -fsSL -O https://repo1.maven.org/maven2/$p || exit 1; done < /urls/urls.txt"]
           volumeMounts: [{name: deps, mountPath: /deps}, {name: urls, mountPath: /urls}]
       containers:
         - name: server
-          image: eclipse-temurin:21-jre
+          image: eclipse-temurin:25-jre
           command: ["/bin/sh", "-c", "exec java -Xms192m -Xmx256m -Dh2=true -Dtls.keystore=/certs/server.p12 -cp \"/jars/hydrangea.jar:/jars/bench.jar:/deps/*\" servers.HydrangeaHttpServer 8443 1 0.0.0.0"]
           ports: [{containerPort: 8443}]
           resources:
@@ -56,12 +56,12 @@ spec:
     spec:
       initContainers:
         - name: deps
-          image: eclipse-temurin:21-jre
+          image: eclipse-temurin:25-jre
           command: ["/bin/sh", "-c", "mkdir -p /deps && cd /deps && while read p; do curl -fsSL -O https://repo1.maven.org/maven2/$p || exit 1; done < /urls/urls.txt"]
           volumeMounts: [{name: deps, mountPath: /deps}, {name: urls, mountPath: /urls}]
       containers:
         - name: server
-          image: eclipse-temurin:21-jre
+          image: eclipse-temurin:25-jre
           command: ["/bin/sh", "-c", "exec java -Xms192m -Xmx256m -Dtls.keystore=/certs/server.p12 -Dtls.port=8443 -cp \"/jars/hydrangea.jar:/jars/bench.jar:/deps/*\" UndertowBenchServer 8080 1 0.0.0.0 h2,tuned"]
           ports: [{containerPort: 8443}]
           resources:
@@ -98,12 +98,12 @@ spec:
     spec:
       initContainers:
         - name: deps
-          image: eclipse-temurin:21-jre
+          image: eclipse-temurin:25-jre
           command: ["/bin/sh", "-c", "mkdir -p /deps && cd /deps && while read p; do curl -fsSL -O https://repo1.maven.org/maven2/$p || exit 1; done < /urls/urls.txt"]
           volumeMounts: [{name: deps, mountPath: /deps}, {name: urls, mountPath: /urls}]
       containers:
         - name: server
-          image: eclipse-temurin:21-jre
+          image: eclipse-temurin:25-jre
           command: ["/bin/sh", "-c", "exec java -Xms192m -Xmx256m -Dtls.keystore=/certs/server.p12 -Dtls.port=8443 -cp \"/jars/hydrangea.jar:/jars/bench.jar:/deps/*\" UndertowBenchServer 8080 1 0.0.0.0 h2,tuned,dispatch"]
           ports: [{containerPort: 8443}]
           resources:

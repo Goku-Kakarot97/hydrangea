@@ -15,12 +15,12 @@ spec:
     spec:
       initContainers:
         - name: deps
-          image: eclipse-temurin:21-jre
+          image: eclipse-temurin:25-jre
           command: ["/bin/sh", "-c", "mkdir -p /deps && cd /deps && while read p; do curl -fsSL -O https://repo1.maven.org/maven2/$p || exit 1; done < /urls/urls.txt"]
           volumeMounts: [{name: deps, mountPath: /deps}, {name: urls, mountPath: /urls}]
       containers:
         - name: server
-          image: eclipse-temurin:21-jre
+          image: eclipse-temurin:25-jre
           command: ["/bin/sh", "-c", "exec java -Xms192m -Xmx256m -Dbind=0.0.0.0 -cp \"/jars/hydrangea.jar:/jars/gbench.jar:/deps/*\" GrpcBench server hydrangea 8080 1"]
           ports: [{containerPort: 8080}]
           resources:
@@ -50,12 +50,12 @@ spec:
     spec:
       initContainers:
         - name: deps
-          image: eclipse-temurin:21-jre
+          image: eclipse-temurin:25-jre
           command: ["/bin/sh", "-c", "mkdir -p /deps && cd /deps && while read p; do curl -fsSL -O https://repo1.maven.org/maven2/$p || exit 1; done < /urls/urls.txt"]
           volumeMounts: [{name: deps, mountPath: /deps}, {name: urls, mountPath: /urls}]
       containers:
         - name: server
-          image: eclipse-temurin:21-jre
+          image: eclipse-temurin:25-jre
           command: ["/bin/sh", "-c", "exec java -Xms192m -Xmx256m -Dbind=0.0.0.0 -cp \"/jars/hydrangea.jar:/jars/gbench.jar:/deps/*\" GrpcBench server java 8080 1"]
           ports: [{containerPort: 8080}]
           resources:

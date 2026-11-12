@@ -2,7 +2,7 @@
 
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.goku-kakarot97/hydrangea-core?label=Maven%20Central)](https://central.sonatype.com/namespace/io.github.goku-kakarot97) [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE) ![Java](https://img.shields.io/badge/Java-21-orange)
 
-A small non-blocking networking framework for Java 21 with **no third-party dependencies**: an event loop on `java.nio`, and on top of it servers for HTTP/1.1, HTTP/2, HTTP/3 (experimental), WebSocket, SSE and gRPC, and clients for HTTP, gRPC, Redis, Kafka, MQTT, AMQP, PostgreSQL, MySQL, MongoDB and Elasticsearch. Every protocol is its own Maven module; the whole thing is about the size of one mid-sized library.
+A small non-blocking networking framework for Java 25 with **no third-party dependencies**: an event loop on `java.nio`, and on top of it servers for HTTP/1.1, HTTP/2, HTTP/3 (experimental), WebSocket, SSE and gRPC, and clients for HTTP, gRPC, Redis, Kafka, MQTT, AMQP, PostgreSQL, MySQL, MongoDB and Elasticsearch. Every protocol is its own Maven module; the whole thing is about the size of one mid-sized library.
 
 Vietnamese documentation, with the full detail of every feature and every measurement: [`README-VI.md`](README-VI.md).
 
@@ -211,7 +211,7 @@ hydrangea records no spans and exports nothing: tracing belongs to the framework
 Where to register it: `HttpConfig.withObserver` (HTTP/1.1, HTTP/2 and HTTP/3 servers; the observation rides on the request as `HttpRequest.attachment()` and a route finds it as `RouteRequest.attachment()`, with `RouteRequest.pattern()` for the span's name), `HttpClientConfig.withObserver`, `client.observer(...)` on `RedisClient`, `PgClient`, `MyClient`, `MongoClient`, `EsClient`, `KafkaProducer`, `AmqpChannel`, `MqttClient`. gRPC has its `ServerInterceptor` / `ClientInterceptor` for the same purpose. Trace context is the caller's business too: put `traceparent` on the request, the metadata, the record headers or the message properties yourself, and read it on the other side. What stays in the library: the infrastructure metrics (connections, pools, event loops, `http.*`, `grpc.*`, see Metrics), the `X-Request-Id` log context in `HttpRouter`, and the `X-Trace-Id` response header name (`HttpRouter.TRACE_HEADER`) the access log reads back.
 ## Status and limits
 
-- Java 21, Maven. Library modules have no dependencies; tests use JUnit, benchmarks use the compared libraries.
+- Java 25, Maven. Library modules have no dependencies; tests use JUnit, benchmarks use the compared libraries.
 - **Experimental**: QUIC and HTTP/3 (no 0-RTT, migration, stateless reset or client; loss recovery not tuned: see the HTTP/3 results above).
 - **HTTP**: client has no request pipelining, SOCKS or TLS to a proxy; server does not compress responses.
 - **Databases**: not JDBC. PostgreSQL has no replication, composite/range types (returned as text), client certificates or Kerberos; MySQL has no `LOAD DATA LOCAL` (deliberately: the protocol lets the server ask for any file) and no multi-statement text queries. Both are new (weeks old) and have been run against real servers in Docker and Kubernetes, not yet in production by anyone.

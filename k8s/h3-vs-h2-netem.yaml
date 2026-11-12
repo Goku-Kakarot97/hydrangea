@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: server
-          image: eclipse-temurin:21-jre
+          image: eclipse-temurin:25-jre
           command: ["/bin/sh", "-c", "apt-get update -qq >/dev/null && apt-get install -y -qq iproute2 >/dev/null; exec java -Xms192m -Xmx256m -Dh2=true -Dtls.keystore=/certs/k.p12 -cp /jars/hydrangea.jar:/jars/bench.jar servers.HydrangeaHttpServer 8443 1 0.0.0.0"]
           ports: [{containerPort: 8443}]
           securityContext: {capabilities: {add: [NET_ADMIN]}}
@@ -46,7 +46,7 @@ spec:
     spec:
       containers:
         - name: server
-          image: eclipse-temurin:21-jre
+          image: eclipse-temurin:25-jre
           command: ["/bin/sh", "-c", "apt-get update -qq >/dev/null && apt-get install -y -qq iproute2 >/dev/null; exec java -Xms192m -Xmx256m -cp /jars/hydrangea.jar io.hydrangea.examples.Http3Example 4433 /certs/k.p12 changeit srv 0.0.0.0"]
           ports: [{containerPort: 4433, protocol: UDP}]
           securityContext: {capabilities: {add: [NET_ADMIN]}}

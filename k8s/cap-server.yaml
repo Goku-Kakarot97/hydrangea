@@ -15,7 +15,7 @@ spec:
       terminationGracePeriodSeconds: 40
       containers:
         - name: server
-          image: eclipse-temurin:21-jre
+          image: eclipse-temurin:25-jre
           command: ["java", "-Xms192m", "-Xmx256m", "-XX:+UseG1GC", "-Dhealth.interval.sec=30", "-cp", "/jars/hydrangea.jar:/jars/bench.jar",
                     "h2.SoakServer", "8080", "1", "0.0.0.0"]
           ports: [{containerPort: 8080}]

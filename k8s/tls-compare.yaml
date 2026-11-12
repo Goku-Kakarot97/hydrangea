@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: server
-          image: eclipse-temurin:21-jre
+          image: eclipse-temurin:25-jre
           command: ["java", "-Xms192m", "-Xmx256m", "-Dtls.keystore=/certs/server.p12", "-Dtls.port=8443", "-Dhealth.interval.sec=60",
                     "-cp", "/jars/hydrangea.jar:/jars/bench.jar", "h2.SoakServer", "8080", "1", "0.0.0.0"]
           ports: [{containerPort: 8080}, {containerPort: 8443}]
@@ -53,7 +53,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: load
-          image: eclipse-temurin:21-jre
+          image: eclipse-temurin:25-jre
           command: ["/bin/sh", "-c"]
           args:
             - |
